@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from 'react';
-import lottie from 'lottie-web';
 
 type HeroLottieBackgroundProps = {
   className?: string;
@@ -36,26 +35,59 @@ export function HeroLottieBackground({ className = '' }: HeroLottieBackgroundPro
   }, []);
 
   useEffect(() => {
-    if (!containerRef.current) {
+    if (!containerRef.current || typeof window === 'undefined') {
       return;
     }
 
-    const animationPath = new URL('hero-bg.json', document.baseURI).toString();
+    const mobileQuery = window.matchMedia('(max-width: 767px)');
+    const reducedMotionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const reducedDataQuery = window.matchMedia('(prefers-reduced-data: reduce)');
 
-    const animation = lottie.loadAnimation({
-      container: containerRef.current,
-      renderer: 'svg',
-      loop: true,
-      autoplay: true,
-      path: animationPath,
-      rendererSettings: {
-        preserveAspectRatio,
-        progressiveLoad: true,
-      },
-    });
+    if (mobileQuery.matches || reducedMotionQuery.matches || reducedDataQuery.matches) {
+      return;
+    }
+
+    let animation: { destroy: () => void } | null = null;
+    let cancelled = false;
+    let timerId: ReturnType<typeof setTimeout> | null = null;
+
+    const loadAnimation = () => {
+      void import('lottie-web').then(({ default: lottie }) => {
+        if (cancelled || !containerRef.current) {
+          return;
+        }
+
+        animation = lottie.loadAnimation({
+          container: containerRef.current,
+          renderer: 'svg',
+          loop: true,
+          autoplay: true,
+          path: new URL('hero-bg.json', document.baseURI).toString(),
+          rendererSettings: {
+            preserveAspectRatio,
+            progressiveLoad: true,
+          },
+        });
+      });
+    };
+
+    if ('requestIdleCallback' in window) {
+      const idleId = window.requestIdleCallback(loadAnimation, { timeout: 1200 });
+      return () => {
+        cancelled = true;
+        window.cancelIdleCallback(idleId);
+        animation?.destroy();
+      };
+    }
+
+    timerId = globalThis.setTimeout(loadAnimation, 600);
 
     return () => {
-      animation.destroy();
+      cancelled = true;
+      if (timerId) {
+        globalThis.clearTimeout(timerId);
+      }
+      animation?.destroy();
     };
   }, [preserveAspectRatio]);
 
