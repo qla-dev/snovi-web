@@ -408,46 +408,8 @@ function normalizeSubcategory(raw: Record<string, unknown>): Subcategory | null 
 }
 
 function deriveApiBaseCandidates() {
-  if (typeof window === 'undefined') {
-    return ['https://snovi.qla.dev'];
-  }
-
   const viteEnv = (import.meta as ImportMeta & { env: Record<string, string | undefined> }).env;
-  const envBase = viteEnv.VITE_API_BASE_URL ? trimTrailingSlash(viteEnv.VITE_API_BASE_URL) : null;
-  const { origin, pathname, hostname, protocol } = window.location;
-  const normalizedPath = pathname.replace(/\/+$/, '');
-  const pathWithoutLanding = normalizedPath.replace(/\/landing(?:\/.*)?$/, '');
-  const pathBase = pathWithoutLanding ? `${origin}${pathWithoutLanding}` : origin;
-  const isLocalHost = hostname === 'localhost' || hostname === '127.0.0.1';
-  const localHostBases = isLocalHost
-    ? [
-        `http://${hostname}/predah/backend/public`,
-        `http://${hostname}/backend/public`,
-      ]
-    : [];
-
-  if (hostname === 'localhost') {
-    localHostBases.push('http://127.0.0.1/predah/backend/public', 'http://127.0.0.1/backend/public');
-  }
-
-  if (hostname === '127.0.0.1') {
-    localHostBases.push('http://localhost/predah/backend/public', 'http://localhost/backend/public');
-  }
-
-  const candidates = uniqueStrings([
-    envBase,
-    pathBase,
-    `${origin}/backend/public`,
-    `${origin}/predah/backend/public`,
-    ...localHostBases,
-    'https://snovi.qla.dev',
-  ]).map(trimTrailingSlash);
-
-  if (protocol === 'https:') {
-    return candidates.filter((candidate) => !candidate.startsWith('http://'));
-  }
-
-  return candidates;
+  return [trimTrailingSlash(viteEnv.VITE_API_BASE_URL || 'https://snovi.qla.dev')];
 }
 
 async function requestJson<T>(baseUrl: string, path: string, signal?: AbortSignal): Promise<T> {
