@@ -414,14 +414,17 @@ function deriveApiBaseCandidates() {
 
   const viteEnv = (import.meta as ImportMeta & { env: Record<string, string | undefined> }).env;
   const envBase = viteEnv.VITE_API_BASE_URL ? trimTrailingSlash(viteEnv.VITE_API_BASE_URL) : null;
-  const { origin, pathname, hostname } = window.location;
+  const { origin, pathname, hostname, protocol } = window.location;
   const normalizedPath = pathname.replace(/\/+$/, '');
   const pathWithoutLanding = normalizedPath.replace(/\/landing(?:\/.*)?$/, '');
   const pathBase = pathWithoutLanding ? `${origin}${pathWithoutLanding}` : origin;
-  const localHostBases = [
-    `http://${hostname}/predah/backend/public`,
-    `http://${hostname}/backend/public`,
-  ];
+  const isLocalHost = hostname === 'localhost' || hostname === '127.0.0.1';
+  const localHostBases = isLocalHost
+    ? [
+        `http://${hostname}/predah/backend/public`,
+        `http://${hostname}/backend/public`,
+      ]
+    : [];
 
   if (hostname === 'localhost') {
     localHostBases.push('http://127.0.0.1/predah/backend/public', 'http://127.0.0.1/backend/public');
@@ -431,7 +434,7 @@ function deriveApiBaseCandidates() {
     localHostBases.push('http://localhost/predah/backend/public', 'http://localhost/backend/public');
   }
 
-  return uniqueStrings([
+  const candidates = uniqueStrings([
     envBase,
     pathBase,
     `${origin}/backend/public`,
@@ -439,6 +442,12 @@ function deriveApiBaseCandidates() {
     ...localHostBases,
     'https://snovi.qla.dev',
   ]).map(trimTrailingSlash);
+
+  if (protocol === 'https:') {
+    return candidates.filter((candidate) => !candidate.startsWith('http://'));
+  }
+
+  return candidates;
 }
 
 async function requestJson<T>(baseUrl: string, path: string, signal?: AbortSignal): Promise<T> {
