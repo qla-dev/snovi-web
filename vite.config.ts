@@ -5,16 +5,9 @@ import {defineConfig, loadEnv} from 'vite';
 
 export default defineConfig(({mode}) => {
   const env = loadEnv(mode, '.', '');
-  const backendHomeDir =
-    env.SNOVI_BACKEND_HOME_DIR ||
-    path.resolve(__dirname, '..', 'snovi-backend', 'public', 'home');
 
   return {
     base: './',
-    build: {
-      outDir: backendHomeDir,
-      emptyOutDir: true,
-    },
     plugins: [react(), tailwindcss()],
     define: {
       'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY),
