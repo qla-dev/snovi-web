@@ -7,12 +7,12 @@ export default defineConfig(({mode}) => {
   const env = loadEnv(mode, '.', '');
   const backendHomeDir =
     env.SNOVI_BACKEND_HOME_DIR ||
-    'C:/Users/Public/Documents/snovi/snovi-backend/public/home';
+    path.resolve(__dirname, '..', 'snovi-backend', 'public', 'home');
 
   return {
     base: './',
     build: {
-      outDir: path.resolve(backendHomeDir),
+      outDir: backendHomeDir,
       emptyOutDir: true,
     },
     plugins: [react(), tailwindcss()],
