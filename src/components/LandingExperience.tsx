@@ -494,14 +494,6 @@ function getProgressRatio(currentTime: number, duration: number | null) {
   return Math.max(0, Math.min(1, currentTime / duration));
 }
 
-function createEffectAudio(effectId: AmbientEffectId) {
-  const effectAudio = new Audio(resolvePublicAssetUrl(AMBIENT_EFFECT_FILE_PATHS[effectId]));
-  effectAudio.preload = 'none';
-  effectAudio.loop = true;
-  effectAudio.volume = 0;
-  return effectAudio;
-}
-
 export function useLandingExperience() {
   const [status, setStatus] = useState<'idle' | 'loading' | 'ready' | 'error'>('loading');
   const [errorMessage, setErrorMessage] = useState('');
@@ -534,14 +526,27 @@ export function useLandingExperience() {
     }
 
     const musicAudio = new Audio();
-    musicAudio.preload = 'none';
+    musicAudio.preload = 'auto';
     musicAudio.loop = true;
     musicAudio.volume = 0;
     musicAudioRef.current = musicAudio;
 
+    const effectAudios: Partial<Record<AmbientEffectId, HTMLAudioElement>> = {};
+    AMBIENT_EFFECT_IDS.forEach((effectId) => {
+      const effectAudio = new Audio(resolvePublicAssetUrl(AMBIENT_EFFECT_FILE_PATHS[effectId]));
+      effectAudio.preload = 'auto';
+      effectAudio.loop = true;
+      effectAudio.volume = 0;
+      effectAudios[effectId] = effectAudio;
+    });
+    effectAudioElementsRef.current = effectAudios;
+
     return () => {
-      Object.values(effectAudioElementsRef.current).forEach((effectAudio: HTMLAudioElement | undefined) => {
-        if (!effectAudio) return;
+      AMBIENT_EFFECT_IDS.forEach((effectId) => {
+        const effectAudio = effectAudios[effectId];
+        if (!effectAudio) {
+          return;
+        }
 
         effectAudio.pause();
         effectAudio.removeAttribute('src');
@@ -729,41 +734,40 @@ export function useLandingExperience() {
 
       await Promise.all(
         AMBIENT_EFFECT_IDS.map(async (effectId) => {
+          const effectAudio = effectAudioElementsRef.current[effectId];
+          if (!effectAudio) {
+            return;
+          }
+
           const level = clampMixerLevel(levels[effectId]);
           const volume = clamp01(level / 10);
+          effectAudio.volume = volume;
 
-          if (volume <= 0) {
-            const effectAudio = effectAudioElementsRef.current[effectId];
-            if (effectAudio) {
-              effectAudio.pause();
+          if (volume > 0) {
+            if (!startedMixerRef.current[effectId]) {
               try {
                 effectAudio.currentTime = 0;
               } catch {
                 // Ignore currentTime assignment failures on not-yet-loaded media.
               }
+              startedMixerRef.current[effectId] = true;
             }
-            startedMixerRef.current[effectId] = false;
+
+            try {
+              await effectAudio.play();
+            } catch {
+              // Ignore autoplay/load failures and retry on the next playback sync.
+            }
             return;
           }
 
-          const effectAudio = effectAudioElementsRef.current[effectId] ?? createEffectAudio(effectId);
-          effectAudioElementsRef.current[effectId] = effectAudio;
-          effectAudio.volume = volume;
-
-          if (!startedMixerRef.current[effectId]) {
-            try {
-              effectAudio.currentTime = 0;
-            } catch {
-              // Ignore currentTime assignment failures on not-yet-loaded media.
-            }
-            startedMixerRef.current[effectId] = true;
-          }
-
+          effectAudio.pause();
           try {
-            await effectAudio.play();
+            effectAudio.currentTime = 0;
           } catch {
-            // Ignore autoplay/load failures and retry on the next playback sync.
+            // Ignore currentTime assignment failures on not-yet-loaded media.
           }
+          startedMixerRef.current[effectId] = false;
         }),
       );
 
@@ -1345,8 +1349,6 @@ function StoryTile({
           alt={story.title}
           className="h-full w-full object-cover transition duration-700 group-hover:scale-[1.04]"
           referrerPolicy="no-referrer"
-          loading="lazy"
-          decoding="async"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black via-black/15 to-transparent" />
 
@@ -1523,8 +1525,6 @@ function DeviceLibraryPreview({
                   alt={story.title}
                   className="h-full w-full object-cover"
                   referrerPolicy="no-referrer"
-                  loading="lazy"
-                  decoding="async"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black via-black/10 to-transparent" />
                 <div className="absolute inset-x-0 bottom-0 p-3">
@@ -1631,8 +1631,6 @@ function DeviceHomePreview({
                     alt={story.title}
                     className="h-full w-full object-cover"
                     referrerPolicy="no-referrer"
-                    loading="lazy"
-                    decoding="async"
                   />
                 </div>
                 <div className="p-2">

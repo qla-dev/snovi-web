@@ -408,10 +408,7 @@ export default function App() {
   }, [landingExperience.closeWaitlistModal, landingExperience.isWaitlistModalOpen]);
 
   useEffect(() => {
-    if (
-      window.matchMedia('(prefers-reduced-motion: reduce)').matches ||
-      window.matchMedia('(max-width: 767px)').matches
-    ) {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
       return;
     }
 
@@ -1090,14 +1087,7 @@ export default function App() {
                 className="group"
               >
                 <div className="relative aspect-[4/5] rounded-[2.5rem] overflow-hidden mb-8 border border-white/5">
-                  <img
-                    src={story.image}
-                    alt={story.title[lang]}
-                    className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-700"
-                    referrerPolicy="no-referrer"
-                    loading="lazy"
-                    decoding="async"
-                  />
+                  <img src={story.image} alt={story.title[lang]} className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-700" referrerPolicy="no-referrer" />
                   <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-60" />
                   
                   {story.status === 'comingSoon' && (
@@ -1177,8 +1167,6 @@ export default function App() {
                 alt="Parents reading to child" 
                 className="w-full h-full object-cover hover:scale-105 transition-transform duration-1000"
                 referrerPolicy="no-referrer"
-                loading="lazy"
-                decoding="async"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
             </div>
