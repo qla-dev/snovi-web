@@ -86,6 +86,7 @@ const qlaLogoSrc = 'https://deklarant.ai/build/images/logo-qla-dark.png';
 const dedicationImageSrc = `${import.meta.env.BASE_URL}img/snovi1.jpg`;
 const SITE_ORIGIN = 'https://snovi.fm';
 const OG_IMAGE_PATH = '/img/snovi34.jpg';
+const APP_STORE_URL = 'https://apps.apple.com/ba/app/snovi-fm/id6758638251';
 
 type Page = 'app' | 'privacy' | 'terms' | 'cookies';
 
@@ -591,13 +592,18 @@ export default function App() {
               </button>
 
               <div className="grid w-full grid-cols-2 gap-4 md:flex md:w-auto md:gap-6">
-                <button className="flex h-16 min-w-0 items-center justify-center gap-3 rounded-2xl bg-white px-4 text-black shadow-2xl shadow-white/10 transition-all hover:bg-violet-500 hover:text-white md:h-20 md:w-auto md:px-8 group">
+                <a
+                  href={APP_STORE_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex h-16 min-w-0 items-center justify-center gap-3 rounded-2xl bg-white px-4 text-black shadow-2xl shadow-white/10 transition-all hover:bg-violet-500 hover:text-white md:h-20 md:w-auto md:px-8 group"
+                >
                   <Apple className="h-6 w-6 shrink-0 md:h-7 md:w-7" />
                   <div className="min-w-0 text-left">
                     <p className="mb-1 text-[9px] leading-none opacity-70 md:text-[10px]">{t.hero.download.appStore.split(' ')[0]}</p>
                     <p className="whitespace-nowrap text-[11px] font-black uppercase leading-none tracking-[0.08em] md:text-base md:tracking-[0.2em]">{t.hero.download.appStore.split(' ').slice(1).join(' ')}</p>
                   </div>
-                </button>
+                </a>
 
                 <button className="flex h-16 min-w-0 items-center justify-center gap-3 rounded-2xl bg-white px-4 text-black shadow-2xl shadow-white/10 transition-all hover:bg-violet-500 hover:text-white md:h-20 md:w-auto md:px-8 group">
                   <PlayCircle className="h-6 w-6 shrink-0 md:h-7 md:w-7" />
