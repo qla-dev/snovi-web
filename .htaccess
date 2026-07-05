@@ -12,6 +12,9 @@ RewriteRule ^$ dist/index.html [L]
 # Public legal routes handled by the client router.
 RewriteRule ^(privacy|terms|cookies)/?$ dist/index.html [L]
 
+# Review route should redirect to the App Store.
+RewriteRule ^review/?$ https://apps.apple.com/ba/app/snovi-fm/id6758638251 [R=302,L,NE]
+
 # If requested path exists inside /dist, serve that file or directory.
 RewriteCond %{DOCUMENT_ROOT}/dist/$1 -f [OR]
 RewriteCond %{DOCUMENT_ROOT}/dist/$1 -d
