@@ -497,7 +497,7 @@ export function useLandingExperience() {
     }
 
     const musicAudio = new Audio();
-    musicAudio.preload = 'auto';
+    musicAudio.preload = 'none';
     musicAudio.loop = true;
     musicAudio.volume = 0;
     musicAudioRef.current = musicAudio;
@@ -505,7 +505,7 @@ export function useLandingExperience() {
     const effectAudios: Partial<Record<AmbientEffectId, HTMLAudioElement>> = {};
     AMBIENT_EFFECT_IDS.forEach((effectId) => {
       const effectAudio = new Audio(resolvePublicAssetUrl(AMBIENT_EFFECT_FILE_PATHS[effectId]));
-      effectAudio.preload = 'auto';
+      effectAudio.preload = 'none';
       effectAudio.loop = true;
       effectAudio.volume = 0;
       effectAudios[effectId] = effectAudio;
@@ -1147,7 +1147,14 @@ function DeviceMiniPlayer({
       <div className="flex min-h-[72px] items-center justify-between gap-3 px-4 py-3">
         <div className="flex min-w-0 flex-1 items-center gap-3">
           <div className="h-11 w-11 shrink-0 overflow-hidden rounded-xl bg-[#111827]">
-            <img src={image} alt={title} className="h-full w-full object-cover" referrerPolicy="no-referrer" />
+            <img
+              src={image}
+              alt={title}
+              className="h-full w-full object-cover"
+              referrerPolicy="no-referrer"
+              loading="lazy"
+              decoding="async"
+            />
           </div>
           <div className="min-w-0 flex-1">
             <p className="truncate whitespace-nowrap text-[8px] font-black uppercase leading-none tracking-[0.22em] text-violet-400 sm:text-[9px]">
@@ -1320,6 +1327,8 @@ function StoryTile({
           alt={story.title}
           className="h-full w-full object-cover transition duration-700 group-hover:scale-[1.04]"
           referrerPolicy="no-referrer"
+          loading="lazy"
+          decoding="async"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black via-black/15 to-transparent" />
 
@@ -1496,6 +1505,8 @@ function DeviceLibraryPreview({
                   alt={story.title}
                   className="h-full w-full object-cover"
                   referrerPolicy="no-referrer"
+                  loading="lazy"
+                  decoding="async"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black via-black/10 to-transparent" />
                 <div className="absolute inset-x-0 bottom-0 p-3">
@@ -1551,6 +1562,8 @@ function DeviceHomePreview({
               alt={currentStory?.title || 'SNOVI'}
               className="h-full w-full object-cover"
               referrerPolicy="no-referrer"
+              loading="lazy"
+              decoding="async"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black via-black/10 to-transparent" />
             <div className="absolute inset-x-0 bottom-0 p-4">
@@ -1602,6 +1615,8 @@ function DeviceHomePreview({
                     alt={story.title}
                     className="h-full w-full object-cover"
                     referrerPolicy="no-referrer"
+                    loading="lazy"
+                    decoding="async"
                   />
                 </div>
                 <div className="p-2">
@@ -1665,7 +1680,14 @@ export function FixedMiniPlayerBar({ lang, experience }: FixedMiniPlayerBarProps
             className="flex min-w-0 flex-1 items-center gap-3 text-left"
           >
             <div className="h-11 w-11 shrink-0 overflow-hidden rounded-xl bg-[#111827] sm:h-12 sm:w-12">
-              <img src={story.image} alt={story.title} className="h-full w-full object-cover" referrerPolicy="no-referrer" />
+              <img
+                src={story.image}
+                alt={story.title}
+                className="h-full w-full object-cover"
+                referrerPolicy="no-referrer"
+                loading="lazy"
+                decoding="async"
+              />
             </div>
             <div className="min-w-0 flex-1">
               <p className="truncate whitespace-nowrap text-[8px] font-black uppercase leading-none tracking-[0.22em] text-violet-400 sm:text-[9px]">

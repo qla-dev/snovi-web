@@ -181,8 +181,8 @@ function upsertLink(selector: string, attributes: Record<string, string>) {
   });
 }
 
-function BrandLogo({ className = '' }: { className?: string }) {
-  return <img src={brandLogoSrc} alt="snovi.fm" className={className} />;
+function BrandLogo({ className = '', loading = 'lazy' }: { className?: string; loading?: 'eager' | 'lazy' }) {
+  return <img src={brandLogoSrc} alt="snovi.fm" className={className} loading={loading} decoding="async" />;
 }
 
 type WaitlistCopy = (typeof translations)['bs']['waitlist'];
@@ -244,7 +244,7 @@ function LegalPage({
     <div className="min-h-screen bg-[#050505] font-sans text-white selection:bg-violet-500/30">
       <nav className="fixed inset-x-0 top-0 z-[100] flex items-center justify-between border-b border-white/5 px-6 glass">
         <button className="flex items-center" type="button" onClick={() => onNavigate('app')} aria-label="snovi.fm">
-          <BrandLogo className="h-20 w-auto max-w-[320px] md:h-24 md:max-w-[380px]" />
+          <BrandLogo className="h-20 w-auto max-w-[320px] md:h-24 md:max-w-[380px]" loading="eager" />
         </button>
 
         <button
@@ -330,6 +330,13 @@ export default function App() {
 
     return !window.matchMedia('(max-width: 767px)').matches;
   });
+  const [renderDeferredSections, setRenderDeferredSections] = useState(() => {
+    if (typeof window === 'undefined') {
+      return false;
+    }
+
+    return !window.matchMedia('(max-width: 767px)').matches;
+  });
   const t = translations[lang];
   const landingExperience = useLandingExperience();
 
@@ -396,6 +403,21 @@ export default function App() {
 
     return () => {
       mediaQuery.removeEventListener('change', syncHeroParticles);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!window.matchMedia('(max-width: 767px)').matches) {
+      setRenderDeferredSections(true);
+      return;
+    }
+
+    const scheduleIdle = window.requestIdleCallback || ((callback: IdleRequestCallback) => window.setTimeout(callback, 900));
+    const cancelIdle = window.cancelIdleCallback || window.clearTimeout;
+    const idleId = scheduleIdle(() => setRenderDeferredSections(true), { timeout: 1800 });
+
+    return () => {
+      cancelIdle(idleId);
     };
   }, []);
 
@@ -494,11 +516,11 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-[#050505] pb-28 font-sans text-white selection:bg-violet-500/30 md:pb-36">
-      <audio ref={landingExperience.setAudioRef} preload="metadata" className="hidden" />
+      <audio ref={landingExperience.setAudioRef} preload="none" className="hidden" />
       {/* Navigation */}
       <nav className={`fixed inset-x-0 top-0 z-[100] flex items-center justify-between px-6 transition-[background-color,border-color,backdrop-filter] duration-500 ${scrolled ? 'glass border-b border-white/5' : 'bg-transparent'}`}>
         <div className="flex items-center">
-          <BrandLogo className="h-20 w-auto max-w-[320px] md:h-24 md:max-w-[380px]" />
+          <BrandLogo className="h-20 w-auto max-w-[320px] md:h-24 md:max-w-[380px]" loading="eager" />
         </div>
         
         <div className="hidden lg:flex items-center gap-10 text-[13px] uppercase tracking-widest font-bold text-slate-400">
@@ -736,6 +758,8 @@ export default function App() {
                       alt="Now Playing"
                       className="w-full h-full object-cover"
                       referrerPolicy="no-referrer"
+                      loading="lazy"
+                      decoding="async"
                     />
                   </div>
                   <div className="flex-1">
@@ -793,6 +817,8 @@ export default function App() {
         </div>
       </section>
 
+      {renderDeferredSections ? (
+      <>
       <div className="max-w-7xl mx-auto h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
 
       {/* Waitlist Section */}
@@ -1194,6 +1220,8 @@ export default function App() {
                 alt="Parents reading to child" 
                 className="w-full h-full object-cover hover:scale-105 transition-transform duration-1000"
                 referrerPolicy="no-referrer"
+                loading="lazy"
+                decoding="async"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
             </div>
@@ -1275,6 +1303,8 @@ export default function App() {
                     alt="qla.dev"
                     className="h-8 w-auto max-w-full object-contain"
                     referrerPolicy="no-referrer"
+                    loading="lazy"
+                    decoding="async"
                   />
                   <ArrowRight className="h-5 w-5 text-slate-400 transition-transform duration-300 group-hover:translate-x-1 group-hover:text-violet-400" />
                 </div>
@@ -1321,6 +1351,8 @@ export default function App() {
           </div>
         </div>
       </footer>
+      </>
+      ) : null}
       {landingExperience.isWaitlistModalOpen ? (
         <div
           className="fixed inset-0 z-[160] flex items-center justify-center p-4 md:p-6"
