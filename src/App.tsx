@@ -323,6 +323,13 @@ export default function App() {
   const [lang, setLang] = useState<Language>('bs');
   const [page, setPage] = useState<Page>(() => getPageFromPath());
   const [scrolled, setScrolled] = useState(false);
+  const [showHeroParticles, setShowHeroParticles] = useState(() => {
+    if (typeof window === 'undefined') {
+      return false;
+    }
+
+    return !window.matchMedia('(max-width: 767px)').matches;
+  });
   const t = translations[lang];
   const landingExperience = useLandingExperience();
 
@@ -378,6 +385,18 @@ export default function App() {
     const handleScroll = () => setScrolled(window.scrollY > 50);
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(max-width: 767px)');
+    const syncHeroParticles = () => setShowHeroParticles(!mediaQuery.matches);
+
+    syncHeroParticles();
+    mediaQuery.addEventListener('change', syncHeroParticles);
+
+    return () => {
+      mediaQuery.removeEventListener('change', syncHeroParticles);
+    };
   }, []);
 
   useEffect(() => {
@@ -519,29 +538,31 @@ export default function App() {
             <div className="absolute left-1/2 top-1/2 z-[3] h-full w-full -translate-x-1/2 -translate-y-1/2 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-20 pointer-events-none" />
             
             {/* Subtle Night Sky Sparkles */}
-            <div className="absolute inset-0 z-[4] overflow-hidden pointer-events-none">
-              {[...Array(40)].map((_, i) => (
-                <motion.div
-                  key={i}
-                  initial={{ 
-                    opacity: Math.random() * 0.3,
-                    x: `${Math.random() * 100}%`,
-                    y: `${Math.random() * 100}%`,
-                    scale: Math.random() * 0.5 + 0.5
-                  }}
-                  animate={{ 
-                    opacity: [0.1, 0.5, 0.1],
-                    scale: [1, 1.2, 1]
-                  }}
-                  transition={{ 
-                    duration: 4 + Math.random() * 6,
-                    repeat: Infinity,
-                    delay: Math.random() * 10
-                  }}
-                  className="absolute w-0.5 h-0.5 bg-white rounded-full"
-                />
-              ))}
-            </div>
+            {showHeroParticles && (
+              <div className="absolute inset-0 z-[4] overflow-hidden pointer-events-none">
+                {[...Array(40)].map((_, i) => (
+                  <motion.div
+                    key={i}
+                    initial={{
+                      opacity: Math.random() * 0.3,
+                      x: `${Math.random() * 100}%`,
+                      y: `${Math.random() * 100}%`,
+                      scale: Math.random() * 0.5 + 0.5,
+                    }}
+                    animate={{
+                      opacity: [0.1, 0.5, 0.1],
+                      scale: [1, 1.2, 1],
+                    }}
+                    transition={{
+                      duration: 4 + Math.random() * 6,
+                      repeat: Infinity,
+                      delay: Math.random() * 10,
+                    }}
+                    className="absolute w-0.5 h-0.5 bg-white rounded-full"
+                  />
+                ))}
+              </div>
+            )}
 
             <div className="hero-mobile-fade absolute inset-x-0 bottom-0 z-[5] h-[30%] md:hidden" />
           </div>
