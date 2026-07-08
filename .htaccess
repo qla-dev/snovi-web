@@ -9,6 +9,9 @@ RewriteRule ^index\.html$ dist/index.html [L]
 # Root domain opens the built app.
 RewriteRule ^$ dist/index.html [L]
 
+# Native deep-link association files must be served as static JSON, not SPA HTML.
+RewriteRule ^\.well-known/(apple-app-site-association|assetlinks\.json)$ dist/.well-known/$1 [L,T=application/json]
+
 # Public legal routes handled by the client router.
 RewriteRule ^(privacy|terms|cookies)/?$ dist/index.html [L]
 

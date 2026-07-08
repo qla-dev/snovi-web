@@ -1,0 +1,19 @@
+{
+  "applinks": {
+    "apps": [],
+    "details": [
+      {
+        "appID": "M3W7V5G2TS.snovi.qla.dev",
+        "paths": [
+          "/promo-code/*"
+        ],
+        "components": [
+          {
+            "/": "/promo-code/*",
+            "comment": "Open snovi.fm promo code links in the native app."
+          }
+        ]
+      }
+    ]
+  }
+}

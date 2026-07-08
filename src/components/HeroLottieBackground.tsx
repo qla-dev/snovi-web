@@ -15,6 +15,13 @@ function getHeroPreserveAspectRatio() {
 
 export function HeroLottieBackground({ className = '' }: HeroLottieBackgroundProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const [shouldRender, setShouldRender] = useState(() => {
+    if (typeof window === 'undefined') {
+      return false;
+    }
+
+    return !window.matchMedia('(max-width: 767px)').matches;
+  });
   const [preserveAspectRatio, setPreserveAspectRatio] = useState(getHeroPreserveAspectRatio);
 
   useEffect(() => {
@@ -24,6 +31,7 @@ export function HeroLottieBackground({ className = '' }: HeroLottieBackgroundPro
 
     const mediaQuery = window.matchMedia('(max-width: 767px)');
     const updatePreserveAspectRatio = () => {
+      setShouldRender(!mediaQuery.matches);
       setPreserveAspectRatio(mediaQuery.matches ? 'xMidYMin meet' : 'xMidYMid slice');
     };
 
@@ -36,7 +44,7 @@ export function HeroLottieBackground({ className = '' }: HeroLottieBackgroundPro
   }, []);
 
   useEffect(() => {
-    if (!containerRef.current) {
+    if (!shouldRender || !containerRef.current) {
       return;
     }
 
@@ -57,7 +65,11 @@ export function HeroLottieBackground({ className = '' }: HeroLottieBackgroundPro
     return () => {
       animation.destroy();
     };
-  }, [preserveAspectRatio]);
+  }, [preserveAspectRatio, shouldRender]);
+
+  if (!shouldRender) {
+    return null;
+  }
 
   return <div ref={containerRef} aria-hidden="true" className={className} />;
 }
