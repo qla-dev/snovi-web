@@ -362,7 +362,7 @@ function MobileBootShell({ onEnter }: { onEnter: () => void }) {
   );
 }
 
-function FullApp() {
+export default function App() {
   const [lang, setLang] = useState<Language>('bs');
   const [page, setPage] = useState<Page>(() => getPageFromPath());
   const [scrolled, setScrolled] = useState(false);
@@ -456,16 +456,50 @@ function FullApp() {
       return;
     }
 
-    const scheduleIdle = window.requestIdleCallback || ((callback: IdleRequestCallback) => window.setTimeout(callback, 900));
-    const cancelIdle = window.cancelIdleCallback || window.clearTimeout;
-    window.__SNOVI_BOOT_MARK__?.('Mobile first paint mode', 'waiting for idle to render below-fold sections');
-    const idleId = scheduleIdle(() => {
+    let didRender = false;
+    let frameId = 0;
+    window.__SNOVI_BOOT_MARK__?.('Mobile first paint mode', 'hero and waitlist only');
+
+    const renderRest = (reason: string) => {
+      if (didRender) {
+        return;
+      }
+
+      didRender = true;
       setRenderDeferredSections(true);
-      window.__SNOVI_BOOT_MARK__?.('Deferred sections ready', 'below-fold page rendered');
-    }, { timeout: 1800 });
+      window.__SNOVI_BOOT_MARK__?.('Deferred sections ready', reason);
+    };
+
+    const checkScroll = () => {
+      frameId = 0;
+      if (window.scrollY > window.innerHeight * 0.72) {
+        renderRest('mobile user scrolled past first sections');
+      }
+    };
+
+    const queueScrollCheck = () => {
+      if (frameId) {
+        return;
+      }
+
+      frameId = window.requestAnimationFrame(checkScroll);
+    };
+
+    const fallbackId = window.setTimeout(() => {
+      renderRest('mobile fallback after first paint settled');
+    }, 8000);
+
+    window.addEventListener('scroll', queueScrollCheck, { passive: true });
+    window.addEventListener('touchstart', queueScrollCheck, { passive: true });
 
     return () => {
-      cancelIdle(idleId);
+      window.clearTimeout(fallbackId);
+      window.removeEventListener('scroll', queueScrollCheck);
+      window.removeEventListener('touchstart', queueScrollCheck);
+
+      if (frameId) {
+        window.cancelAnimationFrame(frameId);
+      }
     };
   }, []);
 
@@ -869,8 +903,6 @@ function FullApp() {
         </div>
       </section>
 
-      {renderDeferredSections ? (
-      <>
       <div className="max-w-7xl mx-auto h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
 
       {/* Waitlist Section */}
@@ -887,6 +919,8 @@ function FullApp() {
         </div>
       </section>
 
+      {renderDeferredSections ? (
+      <>
       <div className="max-w-7xl mx-auto h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
 
       {/* Psychology Section - Refined Grid with Numbers */}
@@ -1433,38 +1467,4 @@ function FullApp() {
       <FixedMiniPlayerBar lang={lang} experience={landingExperience} />
     </div>
   );
-}
-
-export default function App() {
-  const [renderFullApp, setRenderFullApp] = useState(() => {
-    if (typeof window === 'undefined') {
-      return false;
-    }
-
-    return !window.matchMedia('(max-width: 767px)').matches;
-  });
-
-  const promoteFullApp = useCallback((source = 'idle') => {
-    window.__SNOVI_BOOT_MARK__?.('Full app promotion started', `${source} requested interactive sections`);
-    setRenderFullApp(true);
-  }, []);
-
-  useEffect(() => {
-    if (renderFullApp) {
-      window.__SNOVI_BOOT_MARK__?.('Full app active', 'desktop or already promoted');
-      return;
-    }
-
-    window.__SNOVI_BOOT_MARK__?.('Mobile shell mounted', 'heavy app deferred');
-
-    const scheduleIdle = window.requestIdleCallback || ((callback: IdleRequestCallback) => window.setTimeout(callback, 1200));
-    const cancelIdle = window.cancelIdleCallback || window.clearTimeout;
-    const idleId = scheduleIdle(() => promoteFullApp(), { timeout: 2600 });
-
-    return () => {
-      cancelIdle(idleId);
-    };
-  }, [promoteFullApp, renderFullApp]);
-
-  return renderFullApp ? <FullApp /> : <MobileBootShell onEnter={() => promoteFullApp('tap')} />;
 }
