@@ -36,7 +36,6 @@ import {
   type AmbientEffectId,
   FixedMiniPlayerBar,
   HeroDeviceShowcase,
-  LandingLibrarySection,
   useLandingExperience,
 } from './components/LandingExperience';
 import { HeroLottieBackground } from './components/HeroLottieBackground';
@@ -612,7 +611,6 @@ export default function App() {
           <a href="#preview" className="hover:text-white transition-colors">{t.nav.preview}</a>
           <a href="#psychology" className="hover:text-white transition-colors">{t.nav.psychology}</a>
           <a href="#effects" className="hover:text-white transition-colors">{t.nav.effects}</a>
-          <a href="#stories" className="hover:text-white transition-colors">{t.nav.stories}</a>
           <a href="#waitlist" className="hover:text-white transition-colors">{t.nav.waitlist}</a>
         </div>
 
@@ -1173,20 +1171,6 @@ export default function App() {
         </div>
       </section>
 
-      <div className="max-w-7xl mx-auto h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
-
-      {/* Library Section - Editorial Style */}
-      <LandingLibrarySection
-        lang={lang}
-        experience={landingExperience}
-        badgeLabel={t.nav.stories}
-        title={t.stories.title}
-        safeLabel={t.stories.safeForKids}
-        viewAllLabel={t.stories.viewAll}
-        popularLabel={t.stories.popular}
-        publishedLabel={t.stories.published}
-        comingSoonLabel={t.stories.comingSoon}
-      />
       {false && (
       <section>
         <div className="max-w-7xl mx-auto">
@@ -1362,7 +1346,6 @@ export default function App() {
               <ul className="space-y-4 text-slate-500 font-bold text-sm">
                 <li><a href="#psychology" className="hover:text-violet-500 transition-colors">{t.nav.psychology}</a></li>
                 <li><a href="#effects" className="hover:text-violet-500 transition-colors">{t.nav.effects}</a></li>
-                <li><a href="#stories" className="hover:text-violet-500 transition-colors">{t.nav.stories}</a></li>
               </ul>
             </div>
             <div>

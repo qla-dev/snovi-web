@@ -75,13 +75,6 @@ type MainTabId = number | 'LIBRARY_ALL';
 type SubTabId = number | 'ALL';
 type BottomTabId = 'home' | 'library' | 'profile' | 'offer';
 
-type LibraryFetchPayload = {
-  baseUrl: string;
-  categories: Category[];
-  subcategories: Subcategory[];
-  stories: Story[];
-};
-
 type HeroDeviceShowcaseProps = {
   lang: Language;
   experience: LandingExperienceState;
@@ -219,10 +212,6 @@ function isStoryPlayable(story: Story | null | undefined) {
 
 function uniqueStrings(values: Array<string | null | undefined>) {
   return Array.from(new Set(values.filter((value): value is string => Boolean(value))));
-}
-
-function trimTrailingSlash(value: string) {
-  return value.replace(/\/+$/, '');
 }
 
 function clampMixerLevel(value: unknown) {
@@ -380,19 +369,6 @@ function normalizeStory(raw: Record<string, unknown>): Story {
   };
 }
 
-function normalizeCategory(raw: Record<string, unknown>): Category | null {
-  const id = toInt(raw.id);
-  if (!id) {
-    return null;
-  }
-
-  return {
-    id,
-    slug: String(raw.slug ?? id),
-    label: String(raw.label ?? raw.slug ?? id),
-  };
-}
-
 function normalizeSubcategory(raw: Record<string, unknown>): Subcategory | null {
   const id = toInt(raw.id);
   if (!id) {
@@ -407,55 +383,43 @@ function normalizeSubcategory(raw: Record<string, unknown>): Subcategory | null 
   };
 }
 
-function deriveApiBaseCandidates() {
-  const viteEnv = (import.meta as ImportMeta & { env: Record<string, string | undefined> }).env;
-  return [trimTrailingSlash(viteEnv.VITE_API_BASE_URL || 'https://snovi.qla.dev')];
-}
+const STATIC_CATEGORIES: Category[] = [
+  { id: 1, slug: 'price', label: 'Priče' },
+  { id: 2, slug: 'ambijenti', label: 'Ambijenti' },
+];
 
-async function requestJson<T>(baseUrl: string, path: string, signal?: AbortSignal): Promise<T> {
-  const response = await fetch(`${baseUrl}${path}`, {
-    headers: {
-      Accept: 'application/json',
-    },
-    cache: 'no-store',
-    signal,
-  });
+const STATIC_SUBCATEGORIES: Subcategory[] = [
+  { id: 1, slug: 'za-laku-noc', label: 'Za laku noć', categoryId: 1 },
+  { id: 2, slug: 'klasici', label: 'Klasici', categoryId: 1 },
+];
 
-  if (!response.ok) {
-    throw new Error(`Request failed for ${baseUrl}${path} (${response.status})`);
-  }
-
-  const payload = await response.json();
-  return (payload?.data ?? payload) as T;
-}
-
-async function loadLibraryPayload(signal?: AbortSignal): Promise<LibraryFetchPayload> {
-  const candidates = deriveApiBaseCandidates();
-  let lastError: unknown = null;
-
-  for (const baseUrl of candidates) {
-    try {
-      const [categories, subcategories, stories] = await Promise.all([
-        requestJson<Array<Record<string, unknown>>>(baseUrl, '/api/categories', signal),
-        requestJson<Array<Record<string, unknown>>>(baseUrl, '/api/subcategories', signal),
-        requestJson<Array<Record<string, unknown>>>(baseUrl, '/api/stories?limit=1000', signal),
-      ]);
-
-      return {
-        baseUrl,
-        categories: categories.map(normalizeCategory).filter((item): item is Category => item !== null),
-        subcategories: subcategories
-          .map(normalizeSubcategory)
-          .filter((item): item is Subcategory => item !== null),
-        stories: prioritizeStories(stories.map(normalizeStory)),
-      };
-    } catch (error) {
-      lastError = error;
-    }
-  }
-
-  throw lastError ?? new Error('Unable to resolve a working API base URL.');
-}
+const STATIC_STORIES: Story[] = prioritizeStories([
+  normalizeStory({
+    id: 1,
+    slug: 'cvrcak-i-mrav',
+    title: 'Cvrčak i mrav',
+    narrator: 'snovi.fm',
+    duration: '08:30',
+    image: 'https://images.unsplash.com/photo-1501785888041-af3ef285b470?auto=format&fit=crop&q=80&w=1200',
+    category_id: 1,
+    category_label: 'Priče',
+    subcategory_id: 1,
+    subcategory_label: 'Za laku noć',
+    locked: false,
+    favorite: true,
+  }),
+  normalizeStory({
+    id: 2,
+    slug: 'nocna-suma',
+    title: 'Noćna šuma',
+    narrator: 'snovi.fm',
+    duration: '06:10',
+    image: 'https://images.unsplash.com/photo-1448375240586-882707db888b?auto=format&fit=crop&q=80&w=1200',
+    category_id: 2,
+    category_label: 'Ambijenti',
+    locked: false,
+  }),
+]);
 
 function getProgressRatio(currentTime: number, duration: number | null) {
   if (!duration || duration <= 0) {
@@ -466,12 +430,12 @@ function getProgressRatio(currentTime: number, duration: number | null) {
 }
 
 export function useLandingExperience() {
-  const [status, setStatus] = useState<'idle' | 'loading' | 'ready' | 'error'>('loading');
-  const [errorMessage, setErrorMessage] = useState('');
-  const [apiBaseUrl, setApiBaseUrl] = useState('');
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [subcategories, setSubcategories] = useState<Subcategory[]>([]);
-  const [stories, setStories] = useState<Story[]>([]);
+  const [status] = useState<'idle' | 'loading' | 'ready' | 'error'>('ready');
+  const [errorMessage] = useState('');
+  const [apiBaseUrl] = useState('');
+  const [categories] = useState<Category[]>(STATIC_CATEGORIES);
+  const [subcategories] = useState<Subcategory[]>(STATIC_SUBCATEGORIES);
+  const [stories] = useState<Story[]>(STATIC_STORIES);
   const [mainTab, setMainTab] = useState<MainTabId>(ALL_MAIN_TAB_ID);
   const [subTab, setSubTab] = useState<SubTabId>(ALL_SUB_TAB_ID);
   const [search, setSearch] = useState('');
@@ -570,43 +534,7 @@ export function useLandingExperience() {
   }, []);
 
   useEffect(() => {
-    const controller = new AbortController();
-
-    const load = async () => {
-      setStatus('loading');
-      setErrorMessage('');
-      window.__SNOVI_BOOT_MARK__?.('Library API started', 'fetching categories, subcategories, stories');
-      const startedAt = performance.now();
-
-      try {
-        const payload = await loadLibraryPayload(controller.signal);
-        setApiBaseUrl(payload.baseUrl);
-        setCategories(payload.categories);
-        setSubcategories(payload.subcategories);
-        setStories(payload.stories);
-        setStatus('ready');
-        window.__SNOVI_BOOT_MARK__?.(
-          'Library API ready',
-          `${Math.round(performance.now() - startedAt)}ms, ${payload.stories.length} stories`,
-        );
-      } catch (error) {
-        if (controller.signal.aborted) {
-          return;
-        }
-
-        const message = error instanceof Error ? error.message : 'Unknown error';
-        setErrorMessage(message);
-        setStatus('error');
-        window.__SNOVI_BOOT_MARK__?.(
-          'Library API failed',
-          `${Math.round(performance.now() - startedAt)}ms, ${message}`,
-        );
-      }
-    };
-
-    void load();
-
-    return () => controller.abort();
+    window.__SNOVI_BOOT_MARK__?.('Library API skipped', 'using static landing preview data');
   }, []);
 
   const subcategoriesByCategory = useMemo(() => {
