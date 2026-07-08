@@ -491,8 +491,12 @@ export function useLandingExperience() {
   const effectLevelsRef = useRef<MixerLevels>(createEmptyMixerLevels());
   const pendingStoryDefaultsOnPlayRef = useRef(false);
 
-  useEffect(() => {
+  const ensureAuxiliaryAudio = useCallback(() => {
     if (typeof Audio === 'undefined') {
+      return;
+    }
+
+    if (musicAudioRef.current) {
       return;
     }
 
@@ -511,8 +515,13 @@ export function useLandingExperience() {
       effectAudios[effectId] = effectAudio;
     });
     effectAudioElementsRef.current = effectAudios;
+  }, []);
 
+  useEffect(() => {
     return () => {
+      const musicAudio = musicAudioRef.current;
+      const effectAudios = effectAudioElementsRef.current;
+
       AMBIENT_EFFECT_IDS.forEach((effectId) => {
         const effectAudio = effectAudios[effectId];
         if (!effectAudio) {
@@ -524,9 +533,11 @@ export function useLandingExperience() {
         effectAudio.load();
       });
 
-      musicAudio.pause();
-      musicAudio.removeAttribute('src');
-      musicAudio.load();
+      if (musicAudio) {
+        musicAudio.pause();
+        musicAudio.removeAttribute('src');
+        musicAudio.load();
+      }
       musicAudioRef.current = null;
       effectAudioElementsRef.current = {};
       startedMixerRef.current = createStartedMixerFlags();
@@ -703,6 +714,8 @@ export function useLandingExperience() {
         return;
       }
 
+      ensureAuxiliaryAudio();
+
       await Promise.all(
         AMBIENT_EFFECT_IDS.map(async (effectId) => {
           const effectAudio = effectAudioElementsRef.current[effectId];
@@ -776,7 +789,7 @@ export function useLandingExperience() {
         // Ignore autoplay/load failures and retry on the next playback sync.
       }
     },
-    [hasActiveMixerLevels, pauseAuxiliaryPlayback, prepareMusicAudio],
+    [ensureAuxiliaryAudio, hasActiveMixerLevels, pauseAuxiliaryPlayback, prepareMusicAudio],
   );
 
   useEffect(() => {
@@ -799,6 +812,8 @@ export function useLandingExperience() {
   useEffect(() => {
     if (audioElement) {
       audioElement.pause();
+      audioElement.removeAttribute('src');
+      audioElement.load();
     }
 
     pauseAuxiliaryPlayback();
@@ -903,29 +918,13 @@ export function useLandingExperience() {
       return;
     }
 
-    const shouldResume = pendingResumeRef.current;
     pendingResumeRef.current = false;
 
     pauseAuxiliaryPlayback();
     audioElement.pause();
-    audioElement.src = selectedStory.sound;
-    audioElement.load();
     setProgressRatio(0);
-
-    if (!shouldResume) {
-      setIsPlaying(false);
-      setIsAudioLoading(false);
-      return;
-    }
-
-    setIsAudioLoading(true);
-    void audioElement.play().catch(() => {
-      pendingStoryDefaultsOnPlayRef.current = false;
-      setIsPlaying(false);
-      setIsAudioLoading(false);
-      pauseAuxiliaryPlayback();
-      clearEffectLevels();
-    });
+    setIsPlaying(false);
+    setIsAudioLoading(false);
   }, [audioElement, clearEffectLevels, pauseAuxiliaryPlayback, selectedStory?.id, selectedStory?.sound]);
 
   useEffect(() => {
@@ -943,10 +942,10 @@ export function useLandingExperience() {
 
   const selectStory = useCallback(
     (story: Story) => {
-      pendingResumeRef.current = isPlaying && isStoryPlayable(story);
+      pendingResumeRef.current = false;
       setSelectedStoryId(story.id);
     },
-    [isPlaying],
+    [],
   );
 
   const togglePlayPause = useCallback(async () => {
@@ -964,9 +963,14 @@ export function useLandingExperience() {
     }
 
     if (audioElement.paused) {
+      ensureAuxiliaryAudio();
       pendingStoryDefaultsOnPlayRef.current = true;
       setIsAudioLoading(true);
       try {
+        if (audioElement.getAttribute('src') !== selectedStory.sound) {
+          audioElement.src = selectedStory.sound;
+          audioElement.load();
+        }
         await audioElement.play();
       } catch {
         pendingStoryDefaultsOnPlayRef.current = false;
@@ -977,7 +981,7 @@ export function useLandingExperience() {
     }
 
     audioElement.pause();
-  }, [audioElement, selectedStory]);
+  }, [audioElement, ensureAuxiliaryAudio, selectedStory]);
 
   const toggleStoryPlayback = useCallback(
     async (story: Story) => {
@@ -995,7 +999,7 @@ export function useLandingExperience() {
         return;
       }
 
-      pendingResumeRef.current = true;
+      pendingResumeRef.current = false;
       setSelectedStoryId(story.id);
     },
     [selectedStory?.id, togglePlayPause],
