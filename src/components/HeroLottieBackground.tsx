@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from 'react';
-import lottie from 'lottie-web';
 
 type HeroLottieBackgroundProps = {
   className?: string;
@@ -48,22 +47,31 @@ export function HeroLottieBackground({ className = '' }: HeroLottieBackgroundPro
       return;
     }
 
+    let active = true;
+    let animation: { destroy: () => void } | null = null;
     const animationPath = new URL('hero-bg.json', document.baseURI).toString();
 
-    const animation = lottie.loadAnimation({
-      container: containerRef.current,
-      renderer: 'svg',
-      loop: true,
-      autoplay: true,
-      path: animationPath,
-      rendererSettings: {
-        preserveAspectRatio,
-        progressiveLoad: true,
-      },
+    import('lottie-web').then((module) => {
+      if (!active || !containerRef.current) {
+        return;
+      }
+
+      animation = module.default.loadAnimation({
+        container: containerRef.current,
+        renderer: 'svg',
+        loop: true,
+        autoplay: true,
+        path: animationPath,
+        rendererSettings: {
+          preserveAspectRatio,
+          progressiveLoad: true,
+        },
+      });
     });
 
     return () => {
-      animation.destroy();
+      active = false;
+      animation?.destroy();
     };
   }, [preserveAspectRatio, shouldRender]);
 

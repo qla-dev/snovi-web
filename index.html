@@ -4,6 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="icon" type="image/png" href="./logo.png" />
+    <link rel="preload" as="image" href="./logo.png" />
     <title>snovi.fm - Priprema. Pozor. San.</title>
     <meta name="title" content="snovi.fm - Priprema. Pozor. San." />
     <meta
@@ -33,9 +34,60 @@
       content="Uspavajte maštu. Probudite mir."
     />
     <meta name="twitter:image" content="https://snovi.fm/img/snovi34.jpg" />
+    <style>
+      html,
+      body {
+        margin: 0;
+        min-height: 100%;
+        background: #050505;
+      }
+
+      #root {
+        min-height: 100vh;
+        background: #050505;
+      }
+
+      .initial-shell {
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 24px;
+        box-sizing: border-box;
+        color: #fff;
+        font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        text-align: center;
+        background:
+          radial-gradient(circle at 50% 16%, rgba(139, 92, 246, 0.2), transparent 32%),
+          linear-gradient(180deg, #041221 0%, #050505 68%);
+      }
+
+      .initial-shell img {
+        width: min(280px, 76vw);
+        height: auto;
+        display: block;
+        margin: 0 auto 18px;
+      }
+
+      .initial-shell p {
+        margin: 0;
+        color: rgba(226, 232, 240, 0.78);
+        font-size: 12px;
+        font-weight: 800;
+        letter-spacing: 0.22em;
+        text-transform: uppercase;
+      }
+    </style>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <div class="initial-shell">
+        <div>
+          <img src="./logo.png" alt="snovi.fm" />
+          <p>Priprema. Pozor. San.</p>
+        </div>
+      </div>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
