@@ -44,12 +44,16 @@ export function HeroLottieBackground({ className = '' }: HeroLottieBackgroundPro
 
   useEffect(() => {
     if (!shouldRender || !containerRef.current) {
+      if (!shouldRender) {
+        window.__SNOVI_BOOT_MARK__?.('Lottie skipped', 'mobile viewport');
+      }
       return;
     }
 
     let active = true;
     let animation: { destroy: () => void } | null = null;
     const animationPath = new URL('hero-bg.json', document.baseURI).toString();
+    window.__SNOVI_BOOT_MARK__?.('Lottie chunk requested', 'desktop only');
 
     import('lottie-web').then((module) => {
       if (!active || !containerRef.current) {
@@ -67,6 +71,7 @@ export function HeroLottieBackground({ className = '' }: HeroLottieBackgroundPro
           progressiveLoad: true,
         },
       });
+      window.__SNOVI_BOOT_MARK__?.('Lottie animation started');
     });
 
     return () => {

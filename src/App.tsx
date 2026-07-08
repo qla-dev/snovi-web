@@ -409,16 +409,25 @@ export default function App() {
   useEffect(() => {
     if (!window.matchMedia('(max-width: 767px)').matches) {
       setRenderDeferredSections(true);
+      window.__SNOVI_BOOT_MARK__?.('Deferred sections ready', 'desktop renders full page immediately');
       return;
     }
 
     const scheduleIdle = window.requestIdleCallback || ((callback: IdleRequestCallback) => window.setTimeout(callback, 900));
     const cancelIdle = window.cancelIdleCallback || window.clearTimeout;
-    const idleId = scheduleIdle(() => setRenderDeferredSections(true), { timeout: 1800 });
+    window.__SNOVI_BOOT_MARK__?.('Mobile first paint mode', 'waiting for idle to render below-fold sections');
+    const idleId = scheduleIdle(() => {
+      setRenderDeferredSections(true);
+      window.__SNOVI_BOOT_MARK__?.('Deferred sections ready', 'below-fold page rendered');
+    }, { timeout: 1800 });
 
     return () => {
       cancelIdle(idleId);
     };
+  }, []);
+
+  useEffect(() => {
+    window.__SNOVI_BOOT_MARK__?.('App mounted', 'hero should render now');
   }, []);
 
   useEffect(() => {

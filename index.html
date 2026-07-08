@@ -77,7 +77,84 @@
         letter-spacing: 0.22em;
         text-transform: uppercase;
       }
+
+      .boot-status {
+        margin-top: 14px;
+        color: rgba(167, 139, 250, 0.86);
+        font-size: 10px;
+        font-weight: 800;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+      }
+
+      .boot-debug-panel {
+        position: fixed;
+        left: 12px;
+        right: 12px;
+        bottom: calc(env(safe-area-inset-bottom, 0px) + 12px);
+        z-index: 9999;
+        display: none;
+        max-height: 38vh;
+        overflow: auto;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 16px;
+        background: rgba(2, 6, 23, 0.88);
+        color: #e5e7eb;
+        padding: 12px;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        font-size: 11px;
+        line-height: 1.45;
+        -webkit-backdrop-filter: blur(14px);
+        backdrop-filter: blur(14px);
+      }
+
+      .boot-debug-panel.is-visible {
+        display: block;
+      }
+
+      .boot-debug-panel strong {
+        display: block;
+        margin-bottom: 6px;
+        color: #c4b5fd;
+        font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        font-size: 10px;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+      }
     </style>
+    <script>
+      (function () {
+        var startedAt = performance.now();
+        var events = [];
+        var isDebug = /(?:^|[?&])debugLoad=1(?:&|$)/.test(window.location.search);
+
+        window.__SNOVI_BOOT_DEBUG__ = isDebug;
+        window.__SNOVI_BOOT_MARK__ = function (label, detail) {
+          var elapsed = Math.round(performance.now() - startedAt);
+          var message = elapsed + 'ms - ' + label + (detail ? ' - ' + detail : '');
+          events.push(message);
+
+          var status = document.getElementById('boot-status');
+          if (status) {
+            status.textContent = label + (detail ? ': ' + detail : '');
+          }
+
+          var panel = document.getElementById('boot-debug-panel');
+          if (panel) {
+            panel.className = 'boot-debug-panel' + (isDebug ? ' is-visible' : '');
+            panel.innerHTML = '<strong>Loading debug</strong>' + events.map(function (entry) {
+              return '<div>' + entry.replace(/[&<>"']/g, function (char) {
+                return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char];
+              }) + '</div>';
+            }).join('');
+          }
+
+          console.log('[snovi boot]', message);
+        };
+
+        window.__SNOVI_BOOT_MARK__('HTML painted', 'waiting for JS bundle');
+      })();
+    </script>
   </head>
   <body>
     <div id="root">
@@ -85,9 +162,11 @@
         <div>
           <img src="./logo.png" alt="snovi.fm" />
           <p>Priprema. Pozor. San.</p>
+          <div id="boot-status" class="boot-status">Waiting for JS bundle</div>
         </div>
       </div>
     </div>
+    <div id="boot-debug-panel" class="boot-debug-panel"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

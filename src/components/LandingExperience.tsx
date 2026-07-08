@@ -551,6 +551,8 @@ export function useLandingExperience() {
     const load = async () => {
       setStatus('loading');
       setErrorMessage('');
+      window.__SNOVI_BOOT_MARK__?.('Library API started', 'fetching categories, subcategories, stories');
+      const startedAt = performance.now();
 
       try {
         const payload = await loadLibraryPayload(controller.signal);
@@ -559,6 +561,10 @@ export function useLandingExperience() {
         setSubcategories(payload.subcategories);
         setStories(payload.stories);
         setStatus('ready');
+        window.__SNOVI_BOOT_MARK__?.(
+          'Library API ready',
+          `${Math.round(performance.now() - startedAt)}ms, ${payload.stories.length} stories`,
+        );
       } catch (error) {
         if (controller.signal.aborted) {
           return;
@@ -567,6 +573,10 @@ export function useLandingExperience() {
         const message = error instanceof Error ? error.message : 'Unknown error';
         setErrorMessage(message);
         setStatus('error');
+        window.__SNOVI_BOOT_MARK__?.(
+          'Library API failed',
+          `${Math.round(performance.now() - startedAt)}ms, ${message}`,
+        );
       }
     };
 
