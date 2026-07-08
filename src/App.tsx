@@ -319,7 +319,50 @@ function LegalPage({
   );
 }
 
-export default function App() {
+function MobileBootShell({ onEnter }: { onEnter: () => void }) {
+  return (
+    <div className="min-h-screen bg-[#050505] font-sans text-white">
+      <section className="relative flex min-h-screen items-center justify-center overflow-hidden px-6 text-center">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_18%,rgba(139,92,246,0.28),transparent_34%),linear-gradient(180deg,#041221_0%,#050505_70%)]" />
+        <div className="relative z-10 mx-auto max-w-xl">
+          <img
+            src={brandLogoSrc}
+            alt="snovi.fm"
+            className="mx-auto mb-10 h-24 w-auto max-w-[320px]"
+            loading="eager"
+            decoding="async"
+          />
+          <p className="mb-5 text-[11px] font-black uppercase tracking-[0.32em] text-violet-300">
+            priprema, pozor, san.
+          </p>
+          <h1 className="font-serif text-6xl font-bold leading-[0.86] tracking-tighter">
+            Uspavajte maštu. Probudite mir.
+          </h1>
+          <p className="mx-auto mt-8 max-w-sm text-base font-medium leading-7 text-slate-300">
+            Dječije priče, naratori i zvučni pejzaži za mirniji odlazak u krevet.
+          </p>
+          <div className="mt-10 flex flex-col gap-3">
+            <a
+              href={APP_STORE_URL}
+              className="rounded-2xl bg-white px-6 py-4 text-sm font-black uppercase tracking-[0.18em] text-black"
+            >
+              App Store
+            </a>
+            <button
+              type="button"
+              onClick={onEnter}
+              className="rounded-2xl border border-white/15 bg-white/[0.04] px-6 py-4 text-sm font-black uppercase tracking-[0.18em] text-white"
+            >
+              Istražite magiju
+            </button>
+          </div>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function FullApp() {
   const [lang, setLang] = useState<Language>('bs');
   const [page, setPage] = useState<Page>(() => getPageFromPath());
   const [scrolled, setScrolled] = useState(false);
@@ -1390,4 +1433,38 @@ export default function App() {
       <FixedMiniPlayerBar lang={lang} experience={landingExperience} />
     </div>
   );
+}
+
+export default function App() {
+  const [renderFullApp, setRenderFullApp] = useState(() => {
+    if (typeof window === 'undefined') {
+      return false;
+    }
+
+    return !window.matchMedia('(max-width: 767px)').matches;
+  });
+
+  const promoteFullApp = useCallback((source = 'idle') => {
+    window.__SNOVI_BOOT_MARK__?.('Full app promotion started', `${source} requested interactive sections`);
+    setRenderFullApp(true);
+  }, []);
+
+  useEffect(() => {
+    if (renderFullApp) {
+      window.__SNOVI_BOOT_MARK__?.('Full app active', 'desktop or already promoted');
+      return;
+    }
+
+    window.__SNOVI_BOOT_MARK__?.('Mobile shell mounted', 'heavy app deferred');
+
+    const scheduleIdle = window.requestIdleCallback || ((callback: IdleRequestCallback) => window.setTimeout(callback, 1200));
+    const cancelIdle = window.cancelIdleCallback || window.clearTimeout;
+    const idleId = scheduleIdle(() => promoteFullApp(), { timeout: 2600 });
+
+    return () => {
+      cancelIdle(idleId);
+    };
+  }, [promoteFullApp, renderFullApp]);
+
+  return renderFullApp ? <FullApp /> : <MobileBootShell onEnter={() => promoteFullApp('tap')} />;
 }
