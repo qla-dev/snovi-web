@@ -13,7 +13,7 @@ export const translations = {
     },
     hero: {
       title: 'Uspavajte maštu. Probudite mir.',
-      subtitle: 'Bezvremenske dječije priče sa organskim i poznatim bosanskohercegovačkim naratorima, naučno utemeljeni zvučni pejzaži i zanimljivi kratki dokumentarci koji pretvaraju odlazak u krevet u najljepši dio dana.',
+      subtitle: 'Bezvremenske dječije priče sa domaćim i poznatim naratorima, naučno utemeljeni zvučni pejzaži i zanimljivi kratki dokumentarci koji pretvaraju odlazak u krevet u najljepši dio dana.',
       cta: 'Istražite magiju',
       tagline: 'priprema, pozor, san.',
       badges: {

@@ -491,6 +491,22 @@ export function useLandingExperience() {
   const effectLevelsRef = useRef<MixerLevels>(createEmptyMixerLevels());
   const pendingStoryDefaultsOnPlayRef = useRef(false);
 
+  const ensurePrimaryAudio = useCallback(() => {
+    if (audioElement) {
+      return audioElement;
+    }
+
+    if (typeof Audio === 'undefined') {
+      return null;
+    }
+
+    const nextAudio = new Audio();
+    nextAudio.preload = 'none';
+    setAudioElement(nextAudio);
+    window.__SNOVI_BOOT_MARK__?.('Primary audio created', 'user requested playback');
+    return nextAudio;
+  }, [audioElement]);
+
   const ensureAuxiliaryAudio = useCallback(() => {
     if (typeof Audio === 'undefined') {
       return;
@@ -505,16 +521,24 @@ export function useLandingExperience() {
     musicAudio.loop = true;
     musicAudio.volume = 0;
     musicAudioRef.current = musicAudio;
+  }, []);
 
-    const effectAudios: Partial<Record<AmbientEffectId, HTMLAudioElement>> = {};
-    AMBIENT_EFFECT_IDS.forEach((effectId) => {
-      const effectAudio = new Audio(resolvePublicAssetUrl(AMBIENT_EFFECT_FILE_PATHS[effectId]));
-      effectAudio.preload = 'none';
-      effectAudio.loop = true;
-      effectAudio.volume = 0;
-      effectAudios[effectId] = effectAudio;
-    });
-    effectAudioElementsRef.current = effectAudios;
+  const ensureEffectAudio = useCallback((effectId: AmbientEffectId) => {
+    if (typeof Audio === 'undefined') {
+      return null;
+    }
+
+    const existing = effectAudioElementsRef.current[effectId];
+    if (existing) {
+      return existing;
+    }
+
+    const effectAudio = new Audio(resolvePublicAssetUrl(AMBIENT_EFFECT_FILE_PATHS[effectId]));
+    effectAudio.preload = 'none';
+    effectAudio.loop = true;
+    effectAudio.volume = 0;
+    effectAudioElementsRef.current[effectId] = effectAudio;
+    return effectAudio;
   }, []);
 
   useEffect(() => {
@@ -728,13 +752,16 @@ export function useLandingExperience() {
 
       await Promise.all(
         AMBIENT_EFFECT_IDS.map(async (effectId) => {
-          const effectAudio = effectAudioElementsRef.current[effectId];
+          const level = clampMixerLevel(levels[effectId]);
+          const volume = clamp01(level / 10);
+          const effectAudio = volume > 0
+            ? ensureEffectAudio(effectId)
+            : effectAudioElementsRef.current[effectId];
+
           if (!effectAudio) {
             return;
           }
 
-          const level = clampMixerLevel(levels[effectId]);
-          const volume = clamp01(level / 10);
           effectAudio.volume = volume;
 
           if (volume > 0) {
@@ -799,7 +826,7 @@ export function useLandingExperience() {
         // Ignore autoplay/load failures and retry on the next playback sync.
       }
     },
-    [ensureAuxiliaryAudio, hasActiveMixerLevels, pauseAuxiliaryPlayback, prepareMusicAudio],
+    [ensureAuxiliaryAudio, ensureEffectAudio, hasActiveMixerLevels, pauseAuxiliaryPlayback, prepareMusicAudio],
   );
 
   useEffect(() => {
@@ -833,7 +860,7 @@ export function useLandingExperience() {
       ? defaultsForStory(selectedStory)
       : createEmptyMixerLevels();
     applyCurrentEffectLevels(nextLevels);
-  }, [applyCurrentEffectLevels, audioElement, pauseAuxiliaryPlayback, prepareMusicAudio, selectedStory]);
+  }, [applyCurrentEffectLevels, pauseAuxiliaryPlayback, prepareMusicAudio, selectedStory]);
 
   useEffect(() => {
     if (!audioElement) {
@@ -935,7 +962,7 @@ export function useLandingExperience() {
     setProgressRatio(0);
     setIsPlaying(false);
     setIsAudioLoading(false);
-  }, [audioElement, clearEffectLevels, pauseAuxiliaryPlayback, selectedStory?.id, selectedStory?.sound]);
+  }, [clearEffectLevels, pauseAuxiliaryPlayback, selectedStory?.id, selectedStory?.sound]);
 
   useEffect(() => {
     effectLevelsRef.current = effectLevels;
@@ -959,7 +986,7 @@ export function useLandingExperience() {
   );
 
   const togglePlayPause = useCallback(async () => {
-    if (!audioElement || !selectedStory) {
+    if (!selectedStory) {
       return;
     }
 
@@ -972,16 +999,21 @@ export function useLandingExperience() {
       return;
     }
 
-    if (audioElement.paused) {
+    const playbackAudio = ensurePrimaryAudio();
+    if (!playbackAudio) {
+      return;
+    }
+
+    if (playbackAudio.paused) {
       ensureAuxiliaryAudio();
       pendingStoryDefaultsOnPlayRef.current = true;
       setIsAudioLoading(true);
       try {
-        if (audioElement.getAttribute('src') !== selectedStory.sound) {
-          audioElement.src = selectedStory.sound;
-          audioElement.load();
+        if (playbackAudio.getAttribute('src') !== selectedStory.sound) {
+          playbackAudio.src = selectedStory.sound;
+          playbackAudio.load();
         }
-        await audioElement.play();
+        await playbackAudio.play();
       } catch {
         pendingStoryDefaultsOnPlayRef.current = false;
         setIsAudioLoading(false);
@@ -990,8 +1022,8 @@ export function useLandingExperience() {
       return;
     }
 
-    audioElement.pause();
-  }, [audioElement, ensureAuxiliaryAudio, selectedStory]);
+    playbackAudio.pause();
+  }, [ensureAuxiliaryAudio, ensurePrimaryAudio, selectedStory]);
 
   const toggleStoryPlayback = useCallback(
     async (story: Story) => {

@@ -602,7 +602,6 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-[#050505] pb-28 font-sans text-white selection:bg-violet-500/30 md:pb-36">
-      <audio ref={landingExperience.setAudioRef} preload="none" className="hidden" />
       {/* Navigation */}
       <nav className={`fixed inset-x-0 top-0 z-[100] flex items-center justify-between px-6 transition-[background-color,border-color,backdrop-filter] duration-500 ${scrolled ? 'glass border-b border-white/5' : 'bg-transparent'}`}>
         <div className="flex items-center">
