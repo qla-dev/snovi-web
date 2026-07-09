@@ -106,6 +106,16 @@ body {
   pointer-events: none;
 }
 
+.soundscape-rings {
+  animation: soundscape-rings-spin 20s linear infinite;
+}
+
+@keyframes soundscape-rings-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 @media (max-width: 767px) {
   .hero-lottie-bg {
     -webkit-mask-image: linear-gradient(

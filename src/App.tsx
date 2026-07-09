@@ -147,7 +147,7 @@ function getPathForPage(page: Page) {
   return `/${page}`;
 }
 
-function detectMobileStorePlatform(): StorePlatform | null {
+function detectHeaderStorePlatform(): StorePlatform | null {
   if (typeof navigator === 'undefined' || typeof window === 'undefined') {
     return null;
   }
@@ -157,13 +157,18 @@ function detectMobileStorePlatform(): StorePlatform | null {
   const userAgentDataMobile = Boolean((navigator as Navigator & { userAgentData?: { mobile?: boolean } }).userAgentData?.mobile);
   const hasTouch = navigator.maxTouchPoints > 0 || window.matchMedia('(pointer: coarse)').matches;
   const isIpadOS = platform === 'MacIntel' && navigator.maxTouchPoints > 1;
-
-  if (!hasTouch && !userAgentDataMobile) {
-    return null;
-  }
+  const isSafari = /^((?!chrome|android|crios|fxios|edg).)*safari/i.test(userAgent);
 
   if (/Android/i.test(userAgent)) {
     return 'android';
+  }
+
+  if (isSafari) {
+    return 'ios';
+  }
+
+  if (!hasTouch && !userAgentDataMobile) {
+    return null;
   }
 
   if (/iPhone|iPad|iPod/i.test(userAgent) || isIpadOS) {
@@ -457,7 +462,7 @@ export default function App() {
   const [lang, setLang] = useState<Language>('bs');
   const [page, setPage] = useState<Page>(() => getPageFromPath());
   const [scrolled, setScrolled] = useState(false);
-  const [headerStorePlatform, setHeaderStorePlatform] = useState<StorePlatform | null>(() => detectMobileStorePlatform());
+  const [headerStorePlatform, setHeaderStorePlatform] = useState<StorePlatform | null>(() => detectHeaderStorePlatform());
   const [storeChoiceModalOpen, setStoreChoiceModalOpen] = useState(false);
   const [showHeroParticles, setShowHeroParticles] = useState(() => {
     if (typeof window === 'undefined') {
@@ -497,7 +502,7 @@ export default function App() {
   }, []);
 
   const handleMagicClick = useCallback(() => {
-    const mobilePlatform = detectMobileStorePlatform();
+    const mobilePlatform = detectHeaderStorePlatform();
 
     if (mobilePlatform) {
       openStoreForPlatform(mobilePlatform);
@@ -552,7 +557,7 @@ export default function App() {
 
   useEffect(() => {
     const syncHeaderStorePlatform = () => {
-      setHeaderStorePlatform(detectMobileStorePlatform());
+      setHeaderStorePlatform(detectHeaderStorePlatform());
     };
 
     syncHeaderStorePlatform();
@@ -726,6 +731,7 @@ export default function App() {
 
   const toggleLang = () => setLang(prev => prev === 'bs' ? 'en' : 'bs');
   const headerStorePlatforms: StorePlatform[] = headerStorePlatform ? [headerStorePlatform] : ['ios', 'android'];
+  const useShortHeaderStoreLabels = headerStorePlatforms.length > 1;
 
   if (page !== 'app') {
     return <LegalPage page={page} lang={lang} onNavigate={navigateToPage} />;
@@ -760,7 +766,11 @@ export default function App() {
               <StoreDownloadButton
                 platform={platform}
                 variant="header"
-                label={platform === 'ios' ? 'Preuzmi za iOS' : 'Preuzmi za Android'}
+                label={
+                  useShortHeaderStoreLabels
+                    ? platform === 'ios' ? 'iOS' : 'Android'
+                    : platform === 'ios' ? 'Preuzmi za iOS' : 'Preuzmi za Android'
+                }
               />
             </React.Fragment>
           ))}
@@ -1257,15 +1267,11 @@ export default function App() {
 
               <div className="aspect-square rounded-[3rem] glass border-white/5 p-12 flex items-center justify-center relative overflow-hidden z-10">
                 <div className="absolute inset-0 bg-gradient-to-br from-violet-500/10 to-transparent" />
-                <motion.div 
-                  animate={{ rotate: 360 }}
-                  transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-                  className="aspect-square w-full rounded-full border-2 border-dashed border-white/10 flex items-center justify-center"
-                >
+                <div className="soundscape-rings aspect-square w-full rounded-full border-2 border-dashed border-white/10 flex items-center justify-center">
                   <div className="aspect-square w-3/4 rounded-full border-2 border-dashed border-white/20 flex items-center justify-center">
                     <div className="aspect-square w-1/2 rounded-full border-2 border-dashed border-white/30" />
                   </div>
-                </motion.div>
+                </div>
                 
                 <div className="absolute inset-0 flex items-center justify-center">
                   <div className="w-32 h-32 rounded-full bg-violet-600 flex items-center justify-center shadow-[0_0_50px_rgba(139,92,246,0.5)]">
@@ -1281,7 +1287,7 @@ export default function App() {
       <div className="max-w-7xl mx-auto h-px bg-gradient-to-r from-transparent via-white/20 to-transparent mb-20" />
 
       {/* Dedication Section - Luxury Split with Parents Image */}
-      <section className="px-6 pb-6 pt-20 bg-white text-black rounded-[5rem] mx-4 mb-4 relative overflow-hidden md:py-40">
+      <section className="px-6 pb-6 pt-12 bg-white text-black rounded-[5rem] mx-4 mb-4 relative overflow-hidden md:py-40">
         <div className="max-w-7xl mx-auto grid gap-12 items-center lg:grid-cols-2 lg:gap-32">
           <motion.div
             initial={{ opacity: 0, x: -30 }}
@@ -1378,8 +1384,8 @@ export default function App() {
       {/* Footer */}
       <footer className="px-6 pb-8 pt-16 md:pt-32 md:pb-10">
         <div className="max-w-7xl mx-auto">
-          <div className="grid md:grid-cols-5 gap-16 mb-24">
-            <div className="col-span-2 flex items-center gap-4 md:block">
+          <div className="grid grid-cols-1 gap-16 mb-24 md:grid-cols-5">
+            <div className="flex flex-col items-center gap-4 text-center md:col-span-2 md:block md:text-left">
               <div className="shrink-0 md:mb-8">
                 <BrandLogo className="h-12 w-auto max-w-[150px] md:h-16 md:max-w-[260px]" />
               </div>
@@ -1397,9 +1403,16 @@ export default function App() {
             <div>
               <h5 className="text-xs font-black uppercase tracking-widest text-white mb-8">{t.footer.social}</h5>
               <ul className="space-y-4 text-slate-500 font-bold text-sm">
-                <li><a href="#" className="hover:text-violet-500 transition-colors">Instagram</a></li>
-                <li><a href="#" className="hover:text-violet-500 transition-colors">TikTok</a></li>
-                <li><a href="#" className="hover:text-violet-500 transition-colors">Facebook</a></li>
+                <li>
+                  <a href="https://www.instagram.com/p/DX9G7-QIWia/" target="_blank" rel="noreferrer" className="hover:text-violet-500 transition-colors">
+                    Instagram
+                  </a>
+                </li>
+                <li>
+                  <a href="https://www.linkedin.com/showcase/snovi-fm/" target="_blank" rel="noreferrer" className="hover:text-violet-500 transition-colors">
+                    LinkedIn
+                  </a>
+                </li>
               </ul>
             </div>
             <div className="justify-self-center text-center md:justify-self-auto md:text-left">

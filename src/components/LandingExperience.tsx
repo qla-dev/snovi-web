@@ -860,13 +860,23 @@ export function useLandingExperience() {
   }, [selectedStory]);
 
   useEffect(() => {
+    const shouldKeepPlayback =
+      pendingResumeRef.current &&
+      Boolean(selectedStory?.sound) &&
+      Boolean(audioElement && audioElement.getAttribute('src') === selectedStory?.sound);
+
     if (audioElement) {
-      audioElement.pause();
-      audioElement.removeAttribute('src');
-      audioElement.load();
+      if (!shouldKeepPlayback) {
+        audioElement.pause();
+        audioElement.removeAttribute('src');
+        audioElement.load();
+      }
     }
 
-    pauseAuxiliaryPlayback();
+    if (!shouldKeepPlayback) {
+      pauseAuxiliaryPlayback();
+    }
+
     prepareMusicAudio(selectedStory);
 
     const nextLevels = pendingResumeRef.current
@@ -968,7 +978,10 @@ export function useLandingExperience() {
       return;
     }
 
-    pendingResumeRef.current = false;
+    if (pendingResumeRef.current) {
+      pendingResumeRef.current = false;
+      return;
+    }
 
     pauseAuxiliaryPlayback();
     audioElement.pause();
@@ -1064,10 +1077,52 @@ export function useLandingExperience() {
         return;
       }
 
-      pendingResumeRef.current = false;
+      const storySound = story.sound;
+      if (!storySound) {
+        return;
+      }
+
+      const playbackAudio = ensurePrimaryAudio();
+      if (!playbackAudio) {
+        return;
+      }
+
+      pendingResumeRef.current = true;
+      pendingStoryDefaultsOnPlayRef.current = true;
+      selectedStoryRef.current = story;
       setSelectedStoryId(story.id);
+      setProgressRatio(0);
+      setIsAudioLoading(true);
+
+      try {
+        if (playbackAudio.getAttribute('src') !== storySound) {
+          playbackAudio.src = storySound;
+          playbackAudio.load();
+        }
+
+        ensureAuxiliaryAudio();
+        await playbackAudio.play();
+        pendingStoryDefaultsOnPlayRef.current = false;
+        const nextLevels = defaultsForStory(story);
+        applyCurrentEffectLevels(nextLevels);
+        void syncAuxiliaryPlayback(true, story, nextLevels);
+        setIsAudioLoading(false);
+        setIsPlaying(true);
+      } catch {
+        pendingResumeRef.current = false;
+        pendingStoryDefaultsOnPlayRef.current = false;
+        setIsAudioLoading(false);
+        setIsPlaying(false);
+      }
     },
-    [selectedStory?.id, togglePlayPause],
+    [
+      applyCurrentEffectLevels,
+      ensureAuxiliaryAudio,
+      ensurePrimaryAudio,
+      selectedStory?.id,
+      syncAuxiliaryPlayback,
+      togglePlayPause,
+    ],
   );
 
   const seekBy = useCallback(
@@ -1372,7 +1427,6 @@ function StoryTile({
   selected,
   playing,
   loading,
-  onSelect,
   onTogglePlay,
   popularLabel,
   comingSoonLabel,
@@ -1382,7 +1436,6 @@ function StoryTile({
   selected: boolean;
   playing: boolean;
   loading: boolean;
-  onSelect: (story: Story) => void;
   onTogglePlay: (story: Story) => void;
   popularLabel: string;
   comingSoonLabel: string;
@@ -1399,11 +1452,11 @@ function StoryTile({
     >
       <div
         className={`relative cursor-pointer ${compact ? 'aspect-[3/4] md:aspect-[6/5]' : 'aspect-[3/5] md:aspect-[4/5]'}`}
-        onClick={() => onSelect(story)}
+        onClick={() => void onTogglePlay(story)}
         onKeyDown={(event) => {
           if (event.key === 'Enter' || event.key === ' ') {
             event.preventDefault();
-            onSelect(story);
+            void onTogglePlay(story);
           }
         }}
         role="button"
@@ -1963,8 +2016,8 @@ export function LandingLibrarySection({
             </div>
           </div>
 
-          <div className="hide-scrollbar mb-5 overflow-x-auto pb-1">
-            <div className="flex w-max gap-2 pr-2">
+          <div className="hide-scrollbar -mx-6 mb-5 overflow-x-auto pb-1 md:mx-0">
+            <div className="flex w-max gap-2 px-6 md:px-0 md:pr-2">
               <button
                 type="button"
                 onClick={() => experience.changeMainTab(ALL_MAIN_TAB_ID)}
@@ -1994,8 +2047,8 @@ export function LandingLibrarySection({
           </div>
 
           {experience.currentSubcategories.length ? (
-            <div className="hide-scrollbar mb-8 overflow-x-auto pb-1">
-              <div className="flex w-max gap-2 pr-2">
+            <div className="hide-scrollbar -mx-6 mb-8 overflow-x-auto pb-1 md:mx-0">
+              <div className="flex w-max gap-2 px-6 md:px-0 md:pr-2">
                 <button
                   type="button"
                   onClick={() => experience.setSubTab(ALL_SUB_TAB_ID)}
@@ -2041,7 +2094,6 @@ export function LandingLibrarySection({
                     selected={experience.selectedStory?.id === story.id}
                     playing={experience.selectedStoryId === story.id && experience.isPlaying}
                     loading={experience.selectedStoryId === story.id && experience.isAudioLoading}
-                    onSelect={experience.selectStory}
                     onTogglePlay={experience.toggleStoryPlayback}
                     popularLabel={story.favorite ? copy.favorites : popularLabel}
                     comingSoonLabel={comingSoonLabel}
