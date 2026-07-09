@@ -1384,12 +1384,12 @@ export default function App() {
       {/* Footer */}
       <footer className="px-6 pb-8 pt-16 md:pt-32 md:pb-10">
         <div className="max-w-7xl mx-auto">
-          <div className="grid grid-cols-1 gap-16 mb-24 md:grid-cols-5">
-            <div className="flex flex-col items-center gap-4 text-center md:col-span-2 md:block md:text-left">
+          <div className="grid grid-cols-2 gap-16 mb-24 md:grid-cols-5">
+            <div className="col-span-2 flex flex-col items-center gap-4 text-center md:block md:text-left">
               <div className="shrink-0 md:mb-8">
-                <BrandLogo className="h-12 w-auto max-w-[150px] md:h-16 md:max-w-[260px]" />
+                <BrandLogo className="h-20 w-auto max-w-[220px] md:h-24 md:max-w-[320px]" />
               </div>
-              <p className="max-w-[170px] text-sm leading-snug text-slate-500 md:max-w-sm md:text-xl md:leading-relaxed">
+              <p className="max-w-[220px] text-xl leading-snug text-slate-500 md:max-w-sm md:leading-relaxed">
                 {t.footer.tagline}
               </p>
             </div>
@@ -1415,7 +1415,7 @@ export default function App() {
                 </li>
               </ul>
             </div>
-            <div className="justify-self-center text-center md:justify-self-auto md:text-left">
+            <div className="col-span-2 justify-self-center text-center md:col-span-1 md:justify-self-auto md:text-left">
               <h5 className="text-xs font-black uppercase tracking-widest text-white mb-8">{t.footer.propertyOf}</h5>
               <a
                 href="https://qla.dev"
