@@ -1282,13 +1282,13 @@ export default function App() {
 
       {/* Dedication Section - Luxury Split with Parents Image */}
       <section className="px-6 pb-6 pt-20 bg-white text-black rounded-[5rem] mx-4 mb-4 relative overflow-hidden md:py-40">
-        <div className="max-w-7xl mx-auto grid lg:grid-cols-2 gap-32 items-center">
+        <div className="max-w-7xl mx-auto grid gap-12 items-center lg:grid-cols-2 lg:gap-32">
           <motion.div
             initial={{ opacity: 0, x: -30 }}
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
           >
-            <h2 className="text-[11px] font-black uppercase tracking-[0.5em] text-violet-600 mb-10">{t.dedication.mission}</h2>
+            <h2 className="text-[11px] font-black uppercase tracking-[0.5em] text-violet-600 mb-8 md:mb-10">{t.dedication.mission}</h2>
             <h3 className="text-6xl md:text-8xl font-serif font-bold mb-12 leading-[0.85] tracking-tighter">{t.dedication.title}</h3>
             <p className="text-2xl text-slate-600 leading-relaxed mb-16 font-medium">
               {t.dedication.description}
@@ -1329,11 +1329,11 @@ export default function App() {
             </div>
             
             <AnimatedWidgetShell className="absolute -bottom-10 -right-10 z-50 hidden md:block" strength={0.9}>
-            <div className="glass p-10 rounded-[3rem] border-white/20 shadow-4xl max-w-[280px] rotate-[5deg]">
+            <div className="max-w-[280px] rotate-[5deg] rounded-[3rem] border border-slate-700/60 bg-[#0f172a] p-10 shadow-4xl">
               <div className="flex gap-2 mb-4">
                 {[1, 2, 3, 4, 5].map(i => <Star key={i} className="w-5 h-5 fill-amber-400 text-amber-400" />)}
               </div>
-              <p className="text-lg font-serif italic text-slate-800 mb-4">{t.dedication.quote}</p>
+              <p className="text-lg font-serif italic text-white mb-4">{t.dedication.quote}</p>
               <p className="text-xs font-black uppercase tracking-widest text-violet-600">— {t.dedication.author}</p>
             </div>
             </AnimatedWidgetShell>
@@ -1402,7 +1402,7 @@ export default function App() {
                 <li><a href="#" className="hover:text-violet-500 transition-colors">Facebook</a></li>
               </ul>
             </div>
-            <div>
+            <div className="text-center md:text-left">
               <h5 className="text-xs font-black uppercase tracking-widest text-white mb-8">{t.footer.propertyOf}</h5>
               <a
                 href="https://qla.dev"
@@ -1410,8 +1410,7 @@ export default function App() {
                 rel="noreferrer"
                 className="group block text-white"
               >
-                <p className="text-[10px] font-black uppercase tracking-[0.28em] text-slate-500">{t.footer.ecosystem}</p>
-                <div className="mt-4 flex items-center justify-between gap-4">
+                <div className="flex items-center justify-center gap-4 md:justify-between">
                   <img
                     src={qlaLogoSrc}
                     alt="qla.dev"
