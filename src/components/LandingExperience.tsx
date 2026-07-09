@@ -1658,7 +1658,7 @@ function DeviceHomePreview({
       <div className="absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-black/30 to-transparent" />
 
       <div className="relative flex-1 px-4 pb-32 pt-5">
-        <p className="text-[9px] font-black uppercase tracking-[0.3em] text-violet-400">{copy.deviceHomeKicker}</p>
+        <p className="text-center text-[9px] font-black uppercase tracking-[0.3em] text-violet-400">{copy.deviceHomeKicker}</p>
         {currentStory ? (
           <div className="mt-4 overflow-hidden rounded-[2rem] border border-white/8 bg-white/[0.04]">
             <div className="relative aspect-[4/5]">
@@ -1778,7 +1778,7 @@ function DeviceHomePreview({
 export function HeroDeviceShowcase({ lang, experience }: HeroDeviceShowcaseProps) {
   return (
     <div className="relative z-10 flex flex-col items-center justify-center gap-20 md:flex-row md:gap-0">
-      <div className="relative z-20 h-[540px] w-[272px] overflow-hidden rounded-[3rem] border-[8px] border-[#1a1a1a] bg-[#0a0a0a] shadow-[0_80px_150px_-30px_rgba(0,0,0,0.8)] md:h-[580px] md:w-[280px] md:-translate-x-[40px] md:rotate-[-5deg] md:border-[10px]">
+      <div className="relative z-20 h-[540px] w-[272px] rotate-[-5deg] overflow-hidden rounded-[3rem] border-[8px] border-[#1a1a1a] bg-[#0a0a0a] shadow-[0_80px_150px_-30px_rgba(0,0,0,0.8)] md:h-[580px] md:w-[280px] md:-translate-x-[40px] md:border-[10px]">
         <DeviceHomePreview lang={lang} experience={experience} />
       </div>
 

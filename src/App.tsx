@@ -260,8 +260,7 @@ function StoreDownloadButton({
   ) : (
     <>
       <Icon className="h-4 w-4 shrink-0" />
-      <span className="hidden whitespace-nowrap sm:inline">{storeLabel}</span>
-      <span className="whitespace-nowrap sm:hidden">Preuzmi</span>
+      <span className="whitespace-nowrap">{storeLabel}</span>
     </>
   );
 
@@ -991,11 +990,11 @@ export default function App() {
       <div className="max-w-7xl mx-auto h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
 
       {/* Psychology Section - Refined Grid with Numbers */}
-      <section id="psychology" className="py-20 px-6 relative overflow-hidden md:py-40">
+      <section id="psychology" className="py-20 px-6 relative overflow-hidden md:pt-20 md:pb-40">
         <div className="absolute top-1/2 left-0 w-full h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
         
         <div className="max-w-7xl mx-auto relative z-10">
-          <div className="grid lg:grid-cols-2 gap-24 items-end mb-32">
+          <div className="grid gap-10 items-end mb-16 md:mb-32 lg:grid-cols-2 lg:gap-24">
             <div>
               <h2 className="text-[11px] font-black uppercase tracking-[0.5em] text-violet-500 mb-8">{t.nav.psychology}</h2>
               <h3 className="text-6xl md:text-8xl font-serif font-bold leading-[0.9] tracking-tighter">{t.psychology.title}</h3>
