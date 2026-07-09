@@ -19,7 +19,7 @@ export function HeroLottieBackground({ className = '' }: HeroLottieBackgroundPro
       return false;
     }
 
-    return !window.matchMedia('(max-width: 767px)').matches;
+    return true;
   });
   const [preserveAspectRatio, setPreserveAspectRatio] = useState(getHeroPreserveAspectRatio);
 
@@ -30,7 +30,7 @@ export function HeroLottieBackground({ className = '' }: HeroLottieBackgroundPro
 
     const mediaQuery = window.matchMedia('(max-width: 767px)');
     const updatePreserveAspectRatio = () => {
-      setShouldRender(!mediaQuery.matches);
+      setShouldRender(true);
       setPreserveAspectRatio(mediaQuery.matches ? 'xMidYMin meet' : 'xMidYMid slice');
     };
 
@@ -44,16 +44,13 @@ export function HeroLottieBackground({ className = '' }: HeroLottieBackgroundPro
 
   useEffect(() => {
     if (!shouldRender || !containerRef.current) {
-      if (!shouldRender) {
-        window.__SNOVI_BOOT_MARK__?.('Lottie skipped', 'mobile viewport');
-      }
       return;
     }
 
     let active = true;
     let animation: { destroy: () => void } | null = null;
     const animationPath = new URL('hero-bg.json', document.baseURI).toString();
-    window.__SNOVI_BOOT_MARK__?.('Lottie chunk requested', 'desktop only');
+    window.__SNOVI_BOOT_MARK__?.('Lottie chunk requested');
 
     import('lottie-web').then((module) => {
       if (!active || !containerRef.current) {

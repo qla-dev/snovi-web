@@ -36,6 +36,7 @@ import {
   type AmbientEffectId,
   FixedMiniPlayerBar,
   HeroDeviceShowcase,
+  LandingLibrarySection,
   useLandingExperience,
 } from './components/LandingExperience';
 import { HeroLottieBackground } from './components/HeroLottieBackground';
@@ -1180,6 +1181,20 @@ export default function App() {
           </motion.div>
         </div>
       </section>
+
+      <div className="max-w-7xl mx-auto h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
+
+      <LandingLibrarySection
+        lang={lang}
+        experience={landingExperience}
+        badgeLabel={t.nav.stories}
+        title={t.stories.title}
+        safeLabel={t.stories.safeForKids}
+        viewAllLabel={t.stories.viewAll}
+        popularLabel={t.stories.popular}
+        publishedLabel={t.stories.published}
+        comingSoonLabel={t.stories.comingSoon}
+      />
 
       <div className="max-w-7xl mx-auto h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
 
