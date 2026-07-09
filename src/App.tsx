@@ -1402,7 +1402,7 @@ export default function App() {
                 <li><a href="#" className="hover:text-violet-500 transition-colors">Facebook</a></li>
               </ul>
             </div>
-            <div className="text-center md:text-left">
+            <div className="justify-self-center text-center md:justify-self-auto md:text-left">
               <h5 className="text-xs font-black uppercase tracking-widest text-white mb-8">{t.footer.propertyOf}</h5>
               <a
                 href="https://qla.dev"
