@@ -11,6 +11,7 @@
       name="description"
       content="Uspavajte maštu. Probudite mir."
     />
+    <meta name="keywords" content="snovi.fm, snovi, priče za djecu, uspavljivanje, ambijenti, zvučni pejzaži" />
     <meta name="robots" content="index,follow,max-snippet:160,max-image-preview:large" />
     <meta name="theme-color" content="#050505" />
     <link rel="canonical" href="https://snovi.fm/" />
@@ -34,6 +35,73 @@
       content="Uspavajte maštu. Probudite mir."
     />
     <meta name="twitter:image" content="https://snovi.fm/img/snovi34.jpg" />
+    <script>
+      (function () {
+        var routes = {
+          '/sos-djecije-selo': {
+            title: 'snovi.fm x SOS Dječije selo',
+            description: 'Kupi godišnju pretplatu za snovi.fm aplikaciju i podrži SOS Dječija sela. snovi.fm donira 20% od svake godišnje pretplate.',
+            keywords: 'snovi.fm, SOS Dječije selo, SOS Dječija sela, godišnja pretplata, donacija, priče za djecu',
+            image: 'https://snovi.fm/img/sos-family-bg.jpg',
+            imageAlt: 'Porodica zajedno čita kao podrška snovi.fm i SOS Dječijim selima',
+            locale: 'bs_BA'
+          },
+          '/donacija-za-sos-djecije-selo': {
+            title: 'snovi.fm x SOS Dječije selo',
+            description: 'Kupi godišnju pretplatu za snovi.fm aplikaciju i podrži SOS Dječija sela. snovi.fm donira 20% od svake godišnje pretplate.',
+            keywords: 'snovi.fm, SOS Dječije selo, SOS Dječija sela, godišnja pretplata, donacija, priče za djecu',
+            image: 'https://snovi.fm/img/sos-family-bg.jpg',
+            imageAlt: 'Porodica zajedno čita kao podrška snovi.fm i SOS Dječijim selima',
+            locale: 'bs_BA',
+            canonicalPath: '/sos-djecije-selo'
+          }
+        };
+        var path = window.location.pathname.replace(/\/+$/, '') || '/';
+        var meta = routes[path];
+        if (!meta) return;
+
+        var canonicalPath = meta.canonicalPath || path;
+        var url = 'https://snovi.fm' + canonicalPath;
+
+        function setMeta(selector, attrName, attrValue, content) {
+          var element = document.head.querySelector(selector);
+          if (!element) {
+            element = document.createElement('meta');
+            element.setAttribute(attrName, attrValue);
+            document.head.appendChild(element);
+          }
+          element.setAttribute('content', content);
+        }
+
+        function setLink(selector, rel, href) {
+          var element = document.head.querySelector(selector);
+          if (!element) {
+            element = document.createElement('link');
+            element.setAttribute('rel', rel);
+            document.head.appendChild(element);
+          }
+          element.setAttribute('href', href);
+        }
+
+        document.title = meta.title;
+        document.documentElement.lang = 'bs';
+        setMeta('meta[name="title"]', 'name', 'title', meta.title);
+        setMeta('meta[name="description"]', 'name', 'description', meta.description);
+        setMeta('meta[name="keywords"]', 'name', 'keywords', meta.keywords);
+        setLink('link[rel="canonical"]', 'canonical', url);
+        setMeta('meta[property="og:locale"]', 'property', 'og:locale', meta.locale);
+        setMeta('meta[property="og:url"]', 'property', 'og:url', url);
+        setMeta('meta[property="og:title"]', 'property', 'og:title', meta.title);
+        setMeta('meta[property="og:description"]', 'property', 'og:description', meta.description);
+        setMeta('meta[property="og:image"]', 'property', 'og:image', meta.image);
+        setMeta('meta[property="og:image:secure_url"]', 'property', 'og:image:secure_url', meta.image);
+        setMeta('meta[property="og:image:alt"]', 'property', 'og:image:alt', meta.imageAlt);
+        setMeta('meta[name="twitter:url"]', 'name', 'twitter:url', url);
+        setMeta('meta[name="twitter:title"]', 'name', 'twitter:title', meta.title);
+        setMeta('meta[name="twitter:description"]', 'name', 'twitter:description', meta.description);
+        setMeta('meta[name="twitter:image"]', 'name', 'twitter:image', meta.image);
+      })();
+    </script>
     <style>
       html,
       body {
@@ -183,8 +251,8 @@
         window.__SNOVI_BOOT_MARK__('HTML painted', 'waiting for JS bundle');
       })();
     </script>
-    <script type="module" crossorigin src="./assets/index-sf-H2xFV.js"></script>
-    <link rel="stylesheet" crossorigin href="./assets/index-C2ll4o6s.css">
+    <script type="module" crossorigin src="./assets/index-DBvACLSg.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-Bh-faogl.css">
   </head>
   <body>
     <div id="root">

@@ -12,8 +12,12 @@ RewriteRule ^$ dist/index.html [L]
 # Native deep-link association files must be served as static JSON, not SPA HTML.
 RewriteRule ^\.well-known/(apple-app-site-association|assetlinks\.json)$ dist/.well-known/$1 [L,T=application/json]
 
+# Canonical SOS route.
+RewriteRule ^donacija-za-sos-djecije-selo/?$ /sos-djecije-selo [R=301,L]
+
 # Public direct routes handled by the client router.
-RewriteRule ^(privacy|terms|cookies|donacija-za-sos-djecije-selo)/?$ dist/index.html [L]
+RewriteRule ^sos-djecije-selo/?$ dist/sos-djecije-selo/index.html [L]
+RewriteRule ^(privacy|terms|cookies)/?$ dist/index.html [L]
 
 # Review route should redirect to the App Store.
 RewriteRule ^review/?$ https://apps.apple.com/ba/app/snovi-fm/id6758638251 [R=302,L,NE]

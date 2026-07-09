@@ -82,7 +82,8 @@ const sosFamilyBackgroundSrc = `${import.meta.env.BASE_URL}img/sos-family-bg.jpg
 const sosLogoSrc = `${import.meta.env.BASE_URL}img/sos-childrens-villages-logo.png`;
 const SITE_ORIGIN = 'https://snovi.fm';
 const OG_IMAGE_PATH = '/img/snovi34.jpg';
-const SOS_DONATION_PATH = '/donacija-za-sos-djecije-selo';
+const SOS_PAGE_PATH = '/sos-djecije-selo';
+const LEGACY_SOS_PAGE_PATH = '/donacija-za-sos-djecije-selo';
 const APP_STORE_URL = 'https://apps.apple.com/us/app/snovi-fm/id6758638251';
 type StorePlatform = 'ios' | 'android';
 
@@ -93,6 +94,8 @@ type PageMeta = {
   description: string;
   keywords: string;
   path: string;
+  imagePath?: string;
+  imageAlt?: string;
 };
 
 const PAGE_META: Record<Page, PageMeta> = {
@@ -121,10 +124,12 @@ const PAGE_META: Record<Page, PageMeta> = {
     path: '/cookies',
   },
   sosDonation: {
-    title: 'snovi.fm donira - SOS Dječije selo',
-    description: 'Uz svaku kupovinu godišnje pretplate za snovi.fm aplikaciju, snovi.fm donira 20% SOS Dječijim selima.',
-    keywords: 'snovi.fm donacija, SOS Dječije selo, godišnja pretplata, djeca, porodica',
-    path: SOS_DONATION_PATH,
+    title: 'snovi.fm x SOS Dječije selo',
+    description: 'Kupi godišnju pretplatu za snovi.fm aplikaciju i podrži SOS Dječija sela. snovi.fm donira 20% od svake godišnje pretplate.',
+    keywords: 'snovi.fm, SOS Dječije selo, SOS Dječija sela, godišnja pretplata, donacija, priče za djecu',
+    path: SOS_PAGE_PATH,
+    imagePath: '/img/sos-family-bg.jpg',
+    imageAlt: 'Porodica zajedno čita kao podrška snovi.fm i SOS Dječijim selima',
   },
 };
 
@@ -148,7 +153,7 @@ function getPageFromPath(pathname = window.location.pathname): Page {
     return 'cookies';
   }
 
-  if (path === SOS_DONATION_PATH) {
+  if (path === SOS_PAGE_PATH || path === LEGACY_SOS_PAGE_PATH) {
     return 'sosDonation';
   }
 
@@ -161,7 +166,7 @@ function getPathForPage(page: Page) {
   }
 
   if (page === 'sosDonation') {
-    return SOS_DONATION_PATH;
+    return SOS_PAGE_PATH;
   }
 
   return `/${page}`;
@@ -354,15 +359,37 @@ function SosDonationPage({
   onNavigate: (page: Page) => void;
 }) {
   const subscriptionPrice = 50;
+  const [isOpening, setIsOpening] = useState(true);
   const [showExtraDonation, setShowExtraDonation] = useState(false);
   const [extraDonationInput, setExtraDonationInput] = useState('');
   const extraDonation = Math.max(0, Number(extraDonationInput) || 0);
   const snoviDonation = subscriptionPrice * 0.2;
+  const appAmount = subscriptionPrice - snoviDonation;
   const sosTotal = snoviDonation + extraDonation;
   const totalDue = subscriptionPrice + extraDonation;
 
+  useEffect(() => {
+    setIsOpening(true);
+    window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+
+    const hideTimer = window.setTimeout(() => {
+      window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+      setIsOpening(false);
+    }, 420);
+
+    return () => window.clearTimeout(hideTimer);
+  }, []);
+
   return (
-    <div className="min-h-screen bg-[#f7f9fc] font-sans text-slate-950 selection:bg-blue-500/20">
+    <div className="min-h-screen bg-[#f7f9fc] pb-44 font-sans text-slate-950 selection:bg-blue-500/20">
+      {isOpening ? (
+        <div className="fixed inset-0 z-[220] flex items-center justify-center bg-[#050505]/92">
+          <LoaderCircle className="h-12 w-12 animate-spin text-violet-400" />
+        </div>
+      ) : null}
+
       <nav className="sticky top-0 z-[100] border-b border-slate-200/80 bg-white/95 px-4 shadow-sm md:px-6">
         <div className="mx-auto flex h-20 max-w-7xl items-center justify-between gap-3">
           <button className="flex min-w-0 items-center" type="button" onClick={() => onNavigate('app')} aria-label="snovi.fm">
@@ -371,7 +398,7 @@ function SosDonationPage({
 
           <div className="flex shrink-0 items-center gap-2 sm:gap-4">
             <a
-              href={SOS_DONATION_PATH}
+              href={SOS_PAGE_PATH}
               className="hidden items-center gap-2 rounded-full bg-blue-50 px-4 py-2 text-[10px] font-black uppercase tracking-[0.16em] text-blue-700 ring-1 ring-blue-100 sm:inline-flex"
               onClick={(event) => event.preventDefault()}
             >
@@ -497,7 +524,7 @@ function SosDonationPage({
                 ) : null}
 
                 <div className="space-y-3 border-t border-slate-200 pt-5 text-sm">
-                  <div className="flex justify-between text-slate-600"><span>Međuzbir</span><span>{formatBam(subscriptionPrice)}</span></div>
+                  <div className="flex justify-between text-slate-600"><span>Za snovi.fm aplikaciju</span><span>{formatBam(appAmount)}</span></div>
                   <div className="flex justify-between text-slate-600"><span>Dodatna donacija</span><span>{formatBam(extraDonation)}</span></div>
                   <div className="flex justify-between text-blue-700"><span>Ukupno za SOS</span><span>{formatBam(sosTotal)}</span></div>
                   <div className="flex justify-between border-t border-slate-200 pt-4 text-base font-bold"><span>Ukupno za platiti</span><span>{formatBam(totalDue)}</span></div>
@@ -511,8 +538,8 @@ function SosDonationPage({
                 </div>
 
                 <label className="block">
-                  <span className="mb-2 block text-sm font-semibold text-slate-700">Email</span>
-                  <input type="email" className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100" />
+                  <span className="mb-2 block text-sm font-semibold text-slate-700">Ime na kartici</span>
+                  <input className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100" />
                 </label>
 
                 <div>
@@ -527,27 +554,30 @@ function SosDonationPage({
                 </div>
 
                 <label className="block">
-                  <span className="mb-2 block text-sm font-semibold text-slate-700">Ime na kartici</span>
-                  <input className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100" />
+                  <span className="mb-2 block text-sm font-semibold text-slate-700">Email</span>
+                  <input type="email" className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100" />
                 </label>
 
-                <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-center text-sm font-semibold text-amber-800">
-                  Donacije još uvijek nisu dostupne. Molimo, vratite se ubrzo
-                </p>
-
-                <button
-                  className="flex h-14 w-full cursor-not-allowed items-center justify-center rounded-xl bg-slate-300 text-sm font-black uppercase tracking-[0.14em] text-slate-500 shadow-none"
-                  disabled
-                  aria-disabled="true"
-                >
-                  Plati {formatBam(totalDue)}
-                </button>
               </form>
             </div>
           </div>
         </section>
 
       </main>
+      <div className="fixed inset-x-0 bottom-0 z-[120] border-t border-slate-200 bg-white px-4 py-3 shadow-[0_-20px_60px_-30px_rgba(15,23,42,0.45)] sm:px-6">
+        <div className="mx-auto max-w-xl space-y-3">
+          <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-center text-sm font-semibold text-amber-800">
+            Donacije još uvijek nisu dostupne. Molimo, vratite se ubrzo
+          </p>
+          <button
+            className="flex h-14 w-full cursor-not-allowed items-center justify-center rounded-xl bg-slate-300 text-sm font-black uppercase tracking-[0.14em] text-slate-500 shadow-none"
+            disabled
+            aria-disabled="true"
+          >
+            Plati {formatBam(totalDue)}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
@@ -558,7 +588,7 @@ function SosStorySection({
   onNavigate: (page: Page) => void;
 }) {
   return (
-    <section id="waitlist" className="relative isolate overflow-hidden bg-[#062c5f] px-6 py-20 text-white scroll-mt-28 md:py-28">
+    <section id="waitlist" className="relative isolate overflow-hidden bg-[#062c5f] px-6 py-14 text-white scroll-mt-28 md:py-20">
       <img
         src={sosFamilyBackgroundSrc}
         alt=""
@@ -567,8 +597,13 @@ function SosStorySection({
         decoding="async"
         referrerPolicy="no-referrer"
       />
-      <div className="absolute inset-0 -z-10 bg-[linear-gradient(90deg,rgba(3,24,54,0.94),rgba(3,24,54,0.78)),linear-gradient(180deg,rgba(6,44,95,0.78),rgba(6,44,95,0.92))]" />
+      <div className="absolute inset-0 -z-10 bg-[linear-gradient(90deg,rgba(3,24,54,0.72),rgba(3,24,54,0.46)),linear-gradient(180deg,rgba(6,44,95,0.48),rgba(6,44,95,0.68))]" />
       <div className="mx-auto grid max-w-7xl gap-12 lg:grid-cols-[1.15fr_0.85fr] lg:items-center">
+        <div className="text-center lg:order-2 lg:text-right">
+          <img src={sosLogoSrc} alt="SOS Dječije selo" className="mx-auto mb-10 h-28 w-28 object-contain md:h-36 md:w-36 lg:mx-0 lg:ml-auto" loading="lazy" />
+          <p className="mb-5 text-[11px] font-black uppercase tracking-[0.36em] text-blue-200">priča iza donacije</p>
+          <h2 className="font-serif text-5xl font-bold leading-[0.95] md:text-7xl">Miran san je lakši kad dijete ima siguran dom.</h2>
+        </div>
         <div className="lg:order-1">
           <div className="grid gap-5 sm:grid-cols-2">
             {[
@@ -584,20 +619,15 @@ function SosStorySection({
             ))}
           </div>
           <a
-            href={SOS_DONATION_PATH}
+            href={SOS_PAGE_PATH}
             onClick={(event) => {
               event.preventDefault();
               onNavigate('sosDonation');
             }}
-            className="mt-8 inline-flex text-base font-black uppercase tracking-[0.16em] text-blue-100 underline decoration-blue-300/60 underline-offset-8 transition hover:text-white hover:decoration-white"
+            className="mx-auto mt-8 inline-flex text-center text-base font-black uppercase tracking-[0.16em] text-blue-100 underline decoration-blue-300/60 underline-offset-8 transition hover:text-white hover:decoration-white lg:mx-0 lg:text-left"
           >
             Kupi godišnju pretplatu i doniraj 10 KM SOS Dječijim selima
           </a>
-        </div>
-        <div className="text-center lg:order-2 lg:text-left">
-          <img src={sosLogoSrc} alt="SOS Dječije selo" className="mx-auto mb-10 h-28 w-28 object-contain md:h-36 md:w-36 lg:mx-0" loading="lazy" />
-          <p className="mb-5 text-[11px] font-black uppercase tracking-[0.36em] text-blue-200">priča iza donacije</p>
-          <h2 className="font-serif text-5xl font-bold leading-[0.95] md:text-7xl">Miran san je lakši kad dijete ima siguran dom.</h2>
         </div>
       </div>
     </section>
@@ -801,7 +831,8 @@ export default function App() {
   useEffect(() => {
     const meta = PAGE_META[page];
     const canonicalUrl = `${SITE_ORIGIN}${meta.path}`;
-    const imageUrl = `${SITE_ORIGIN}${OG_IMAGE_PATH}`;
+    const imageUrl = `${SITE_ORIGIN}${meta.imagePath ?? OG_IMAGE_PATH}`;
+    const imageAlt = meta.imageAlt ?? 'snovi.fm bedtime story and soundscape artwork';
 
     document.title = meta.title;
     upsertMeta('meta[name="title"]', { name: 'title', content: meta.title });
@@ -820,7 +851,7 @@ export default function App() {
     upsertMeta('meta[property="og:image:secure_url"]', { property: 'og:image:secure_url', content: imageUrl });
     upsertMeta('meta[property="og:image:alt"]', {
       property: 'og:image:alt',
-      content: 'snovi.fm bedtime story and soundscape artwork',
+      content: imageAlt,
     });
     upsertMeta('meta[name="twitter:card"]', { name: 'twitter:card', content: 'summary_large_image' });
     upsertMeta('meta[name="twitter:url"]', { name: 'twitter:url', content: canonicalUrl });
@@ -1032,7 +1063,7 @@ export default function App() {
         
         <div className="hidden lg:flex items-center gap-10 text-[13px] uppercase tracking-widest font-bold text-slate-400">
           <a
-            href={SOS_DONATION_PATH}
+            href={SOS_PAGE_PATH}
             onClick={(event) => {
               event.preventDefault();
               navigateToPage('sosDonation');
@@ -1684,7 +1715,7 @@ export default function App() {
                 <li><a href="#effects" className="hover:text-violet-500 transition-colors">{t.nav.effects}</a></li>
                 <li>
                   <a
-                    href={SOS_DONATION_PATH}
+                    href={SOS_PAGE_PATH}
                     onClick={(event) => {
                       event.preventDefault();
                       navigateToPage('sosDonation');
