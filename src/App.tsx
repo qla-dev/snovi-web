@@ -177,6 +177,23 @@ function showAndroidComingSoon() {
   window.alert('Uskoro');
 }
 
+function openAppStore() {
+  const openedWindow = window.open(APP_STORE_URL, '_blank', 'noopener,noreferrer');
+
+  if (!openedWindow) {
+    window.location.href = APP_STORE_URL;
+  }
+}
+
+function openStoreForPlatform(platform: StorePlatform) {
+  if (platform === 'ios') {
+    openAppStore();
+    return;
+  }
+
+  showAndroidComingSoon();
+}
+
 function upsertMeta(selector: string, attributes: Record<string, string>) {
   let element = document.head.querySelector<HTMLMetaElement>(selector);
 
@@ -237,7 +254,7 @@ function StoreDownloadButton({
       <Icon className="h-6 w-6 shrink-0 md:h-7 md:w-7" />
       <div className="min-w-0 text-left">
         <p className="mb-1 text-[9px] leading-none opacity-70 md:text-[10px]">{splitLabel.eyebrow}</p>
-        <p className="whitespace-nowrap text-[11px] font-black uppercase leading-none tracking-[0.08em] md:text-base md:tracking-[0.2em]">{splitLabel.title}</p>
+        <p className="whitespace-nowrap text-[9px] font-black uppercase leading-none tracking-[0.06em] sm:text-[11px] sm:tracking-[0.08em] md:text-base md:tracking-[0.2em]">{splitLabel.title}</p>
       </div>
     </>
   ) : (
@@ -250,9 +267,9 @@ function StoreDownloadButton({
 
   if (platform === 'ios') {
     return (
-      <a href={APP_STORE_URL} target="_blank" rel="noopener noreferrer" className={className}>
+      <button type="button" onClick={openAppStore} className={className}>
         {content}
-      </a>
+      </button>
     );
   }
 
@@ -442,6 +459,7 @@ export default function App() {
   const [page, setPage] = useState<Page>(() => getPageFromPath());
   const [scrolled, setScrolled] = useState(false);
   const [headerStorePlatform, setHeaderStorePlatform] = useState<StorePlatform | null>(() => detectMobileStorePlatform());
+  const [storeChoiceModalOpen, setStoreChoiceModalOpen] = useState(false);
   const [showHeroParticles, setShowHeroParticles] = useState(() => {
     if (typeof window === 'undefined') {
       return false;
@@ -468,6 +486,26 @@ export default function App() {
 
     setPage(nextPage);
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, []);
+
+  const closeStoreChoiceModal = useCallback(() => {
+    setStoreChoiceModalOpen(false);
+  }, []);
+
+  const chooseStorePlatform = useCallback((platform: StorePlatform) => {
+    setStoreChoiceModalOpen(false);
+    openStoreForPlatform(platform);
+  }, []);
+
+  const handleMagicClick = useCallback(() => {
+    const mobilePlatform = detectMobileStorePlatform();
+
+    if (mobilePlatform) {
+      openStoreForPlatform(mobilePlatform);
+      return;
+    }
+
+    setStoreChoiceModalOpen(true);
   }, []);
 
   useEffect(() => {
@@ -547,7 +585,7 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    if (!landingExperience.isWaitlistModalOpen) {
+    if (!landingExperience.isWaitlistModalOpen && !storeChoiceModalOpen) {
       return;
     }
 
@@ -557,22 +595,32 @@ export default function App() {
     return () => {
       document.body.style.overflow = previousOverflow;
     };
-  }, [landingExperience.isWaitlistModalOpen]);
+  }, [landingExperience.isWaitlistModalOpen, storeChoiceModalOpen]);
 
   useEffect(() => {
-    if (!landingExperience.isWaitlistModalOpen) {
+    if (!landingExperience.isWaitlistModalOpen && !storeChoiceModalOpen) {
       return;
     }
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
+        if (storeChoiceModalOpen) {
+          closeStoreChoiceModal();
+          return;
+        }
+
         landingExperience.closeWaitlistModal();
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [landingExperience.closeWaitlistModal, landingExperience.isWaitlistModalOpen]);
+  }, [
+    closeStoreChoiceModal,
+    landingExperience.closeWaitlistModal,
+    landingExperience.isWaitlistModalOpen,
+    storeChoiceModalOpen,
+  ]);
 
   useEffect(() => {
     if (window.matchMedia('(prefers-reduced-motion: reduce), (max-width: 767px)').matches) {
@@ -751,7 +799,7 @@ export default function App() {
               className="flex w-full max-w-[420px] flex-col items-stretch justify-center gap-4 md:max-w-none md:flex-row md:items-center md:gap-6 mx-auto mb-14"
             >
               <button
-                onClick={() => document.getElementById('waitlist')?.scrollIntoView({ behavior: 'smooth' })}
+                onClick={handleMagicClick}
                 className="flex h-20 w-full items-center justify-center gap-3 rounded-2xl bg-violet-600 px-10 font-black uppercase tracking-widest text-white shadow-2xl shadow-violet-500/20 transition-all hover:bg-white hover:text-black md:w-auto group"
               >
                 {t.hero.cta}
@@ -1376,6 +1424,57 @@ export default function App() {
         </div>
       </footer>
       </>
+      {storeChoiceModalOpen ? (
+        <div
+          className="fixed inset-0 z-[160] flex items-center justify-center p-4 md:p-6"
+          onClick={closeStoreChoiceModal}
+        >
+          <div className="absolute inset-0 bg-black/80" />
+          <motion.div
+            initial={{ opacity: 0, y: 18, scale: 0.96 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            transition={{ duration: 0.24, ease: [0.16, 1, 0.3, 1] }}
+            className="relative z-10 w-full max-w-md rounded-[2rem] border border-white/10 bg-[#071728] p-6 text-white shadow-[0_30px_90px_-35px_rgba(0,0,0,0.9)] md:p-8"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <button
+              type="button"
+              onClick={closeStoreChoiceModal}
+              className="absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-black/25 text-slate-300 transition hover:border-violet-500/40 hover:text-white"
+              aria-label="Zatvori"
+            >
+              <X className="h-5 w-5" />
+            </button>
+
+            <div className="mb-6 flex h-14 w-14 items-center justify-center rounded-2xl bg-violet-500/15 text-violet-300 ring-1 ring-white/10">
+              <Smartphone className="h-7 w-7" />
+            </div>
+            <h3 className="pr-10 font-serif text-3xl font-bold leading-none text-white md:text-4xl">Preuzmite aplikaciju</h3>
+            <p className="mt-3 text-sm font-medium leading-6 text-slate-400">
+              Odaberite platformu za snovi.fm.
+            </p>
+
+            <div className="mt-7 grid gap-3 sm:grid-cols-2">
+              <button
+                type="button"
+                onClick={() => chooseStorePlatform('ios')}
+                className="flex h-14 items-center justify-center gap-3 rounded-2xl bg-white px-4 text-sm font-black uppercase tracking-[0.12em] text-black transition hover:bg-violet-500 hover:text-white"
+              >
+                <Apple className="h-5 w-5" />
+                iOS
+              </button>
+              <button
+                type="button"
+                onClick={() => chooseStorePlatform('android')}
+                className="flex h-14 items-center justify-center gap-3 rounded-2xl border border-white/10 bg-white/[0.04] px-4 text-sm font-black uppercase tracking-[0.12em] text-white transition hover:border-violet-500/40 hover:bg-violet-500"
+              >
+                <PlayCircle className="h-5 w-5" />
+                Android
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      ) : null}
       {landingExperience.isWaitlistModalOpen ? (
         <div
           className="fixed inset-0 z-[160] flex items-center justify-center p-4 md:p-6"
