@@ -20,6 +20,36 @@ const pages = [
     image: `${siteOrigin}/img/sos-family-bg.jpg`,
     imageAlt: 'Porodica zajedno čita kao podrška snovi.fm i SOS Dječijim selima',
   },
+  {
+    route: '/metodologija',
+    lang: 'bs',
+    locale: 'bs_BA',
+    title: 'snovi.fm - Metodologija',
+    description: 'Saznajte kako snovi.fm koristi priče, neuroakustiku i večernje rituale za mirniji odlazak djece na spavanje.',
+    keywords: 'snovi.fm metodologija, neuroakustika, spavanje djece, priče za laku noć',
+    image: `${siteOrigin}/img/snovi34.jpg`,
+    imageAlt: 'snovi.fm metodologija za dječije priče i miran san',
+  },
+  {
+    route: '/ambijenti',
+    lang: 'bs',
+    locale: 'bs_BA',
+    title: 'snovi.fm - Ambijenti',
+    description: 'Istražite snovi.fm ambijente i zvučne pejzaže: kiša, šuma, valovi, vatra i drugi zvukovi za mirnije večeri.',
+    keywords: 'snovi.fm ambijenti, zvučni pejzaži, bijeli šum, zvukovi za spavanje',
+    image: `${siteOrigin}/img/snovi34.jpg`,
+    imageAlt: 'snovi.fm ambijenti i zvučni pejzaži',
+  },
+  {
+    route: '/biblioteka',
+    lang: 'bs',
+    locale: 'bs_BA',
+    title: 'snovi.fm - Biblioteka snova',
+    description: 'Pregledajte biblioteku snovi.fm priča, naratora i audio sadržaja za djecu i porodične večernje rituale.',
+    keywords: 'snovi.fm biblioteka, priče za djecu, audio priče, bajke za laku noć',
+    image: `${siteOrigin}/img/snovi34.jpg`,
+    imageAlt: 'snovi.fm biblioteka priča za djecu',
+  },
 ];
 
 const escapeHtml = (value) =>

@@ -87,7 +87,8 @@ const LEGACY_SOS_PAGE_PATH = '/donacija-za-sos-djecije-selo';
 const APP_STORE_URL = 'https://apps.apple.com/us/app/snovi-fm/id6758638251';
 type StorePlatform = 'ios' | 'android';
 
-type Page = 'app' | 'privacy' | 'terms' | 'cookies' | 'sosDonation';
+type Page = 'app' | 'methodology' | 'ambients' | 'library' | 'privacy' | 'terms' | 'cookies' | 'sosDonation';
+type LegalPageId = 'privacy' | 'terms' | 'cookies';
 
 type PageMeta = {
   title: string;
@@ -104,6 +105,24 @@ const PAGE_META: Record<Page, PageMeta> = {
     description: 'Uspavajte maštu. Probudite mir.',
     keywords: 'snovi.fm, snovi, priče za djecu, uspavljivanje, ambijenti, zvučni pejzaži',
     path: '/',
+  },
+  methodology: {
+    title: 'snovi.fm - Metodologija',
+    description: 'Saznajte kako snovi.fm koristi priče, neuroakustiku i večernje rituale za mirniji odlazak djece na spavanje.',
+    keywords: 'snovi.fm metodologija, neuroakustika, spavanje djece, priče za laku noć',
+    path: '/metodologija',
+  },
+  ambients: {
+    title: 'snovi.fm - Ambijenti',
+    description: 'Istražite snovi.fm ambijente i zvučne pejzaže: kiša, šuma, valovi, vatra i drugi zvukovi za mirnije večeri.',
+    keywords: 'snovi.fm ambijenti, zvučni pejzaži, bijeli šum, zvukovi za spavanje',
+    path: '/ambijenti',
+  },
+  library: {
+    title: 'snovi.fm - Biblioteka snova',
+    description: 'Pregledajte biblioteku snovi.fm priča, naratora i audio sadržaja za djecu i porodične večernje rituale.',
+    keywords: 'snovi.fm biblioteka, priče za djecu, audio priče, bajke za laku noć',
+    path: '/biblioteka',
   },
   privacy: {
     title: 'snovi.fm - Politika privatnosti',
@@ -133,6 +152,14 @@ const PAGE_META: Record<Page, PageMeta> = {
   },
 };
 
+const SECTION_PAGE_IDS: Partial<Record<Page, string>> = {
+  methodology: 'psychology',
+  ambients: 'effects',
+  library: 'stories',
+};
+
+const LEGAL_PAGES = new Set<Page>(['privacy', 'terms', 'cookies']);
+
 function normalizePath(pathname: string) {
   const normalized = pathname.replace(/\/+$/, '');
   return normalized || '/';
@@ -153,6 +180,18 @@ function getPageFromPath(pathname = window.location.pathname): Page {
     return 'cookies';
   }
 
+  if (path === '/metodologija') {
+    return 'methodology';
+  }
+
+  if (path === '/ambijenti') {
+    return 'ambients';
+  }
+
+  if (path === '/biblioteka') {
+    return 'library';
+  }
+
   if (path === SOS_PAGE_PATH || path === LEGACY_SOS_PAGE_PATH) {
     return 'sosDonation';
   }
@@ -167,6 +206,10 @@ function getPathForPage(page: Page) {
 
   if (page === 'sosDonation') {
     return SOS_PAGE_PATH;
+  }
+
+  if (page === 'methodology' || page === 'ambients' || page === 'library') {
+    return PAGE_META[page].path;
   }
 
   return `/${page}`;
@@ -607,13 +650,13 @@ function SosStorySection({
         <div className="lg:order-1">
           <div className="grid gap-5 sm:grid-cols-2">
             {[
-              'Kupovinom godišnje pretplate podržavate aplikaciju za mirnije porodične večeri.',
-              'snovi.fm od svake kupovine izdvaja 20% za SOS Dječija sela.',
-              'Dodatni iznos koji unesete ulazi direktno u ukupan SOS iznos ove kupovine.',
-              'Cilj je jednostavan: više priča za djecu, više podrške za djecu kojoj je dom najvažnija priča.',
+              'Kupovinom godišnje pretplate podržavate rad SOS Dječijih sela Bosne i Hercegovine.',
+              'snovi.fm od svake kupovine izdvaja 20% (10 BAM) i izdvaja ih za konstantnu i direktnu podršku djeci bez starateljstva.',
+              'Također, ovim putem možete donirati i dodatni iznos koji unesete direktno u poseni odjeljak pri kupovini.',
+              'Cilj je jednostavan: više podrške za djecu kojoj je dom najvažnija priča.',
             ].map((item) => (
               <div key={item} className="rounded-2xl border border-white/12 bg-white/8 p-6">
-                <Heart className="mb-5 h-6 w-6 text-emerald-300" />
+                <Heart className="mb-5 h-6 w-6 text-violet-300" />
                 <p className="text-lg font-medium leading-7 text-blue-50">{item}</p>
               </div>
             ))}
@@ -639,7 +682,7 @@ function LegalPage({
   lang,
   onNavigate,
 }: {
-  page: Exclude<Page, 'app' | 'sosDonation'>;
+  page: LegalPageId;
   lang: Language;
   onNavigate: (page: Page) => void;
 }) {
@@ -791,6 +834,34 @@ export default function App() {
   const t = translations[lang];
   const landingExperience = useLandingExperience();
 
+  const scrollToSectionPage = useCallback((targetPage: Page, behavior: ScrollBehavior = 'smooth') => {
+    const sectionId = SECTION_PAGE_IDS[targetPage];
+    if (!sectionId) {
+      return;
+    }
+
+    const scrollToTarget = () => {
+      const target = document.getElementById(sectionId);
+      if (!target) {
+        return false;
+      }
+
+      const nav = document.querySelector('nav');
+      const offset = nav instanceof HTMLElement ? nav.offsetHeight + 8 : 88;
+      const top = Math.max(0, window.scrollY + target.getBoundingClientRect().top - offset);
+      window.scrollTo({ top, left: 0, behavior });
+      return true;
+    };
+
+    window.requestAnimationFrame(() => {
+      if (scrollToTarget()) {
+        return;
+      }
+
+      window.setTimeout(scrollToTarget, 120);
+    });
+  }, []);
+
   const navigateToPage = useCallback((nextPage: Page) => {
     const nextPath = getPathForPage(nextPage);
 
@@ -799,8 +870,14 @@ export default function App() {
     }
 
     setPage(nextPage);
+
+    if (SECTION_PAGE_IDS[nextPage]) {
+      scrollToSectionPage(nextPage);
+      return;
+    }
+
     window.scrollTo({ top: 0, behavior: 'smooth' });
-  }, []);
+  }, [scrollToSectionPage]);
 
   const closeStoreChoiceModal = useCallback(() => {
     setStoreChoiceModalOpen(false);
@@ -827,6 +904,14 @@ export default function App() {
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
   }, []);
+
+  useEffect(() => {
+    if (!SECTION_PAGE_IDS[page]) {
+      return;
+    }
+
+    scrollToSectionPage(page, 'auto');
+  }, [page, scrollToSectionPage]);
 
   useEffect(() => {
     const meta = PAGE_META[page];
@@ -1048,8 +1133,8 @@ export default function App() {
     return <SosDonationPage onNavigate={navigateToPage} />;
   }
 
-  if (page !== 'app') {
-    return <LegalPage page={page} lang={lang} onNavigate={navigateToPage} />;
+  if (LEGAL_PAGES.has(page)) {
+    return <LegalPage page={page as LegalPageId} lang={lang} onNavigate={navigateToPage} />;
   }
 
   return (
@@ -1073,9 +1158,36 @@ export default function App() {
             <img src={sosLogoSrc} alt="" className="h-5 w-5 object-contain" loading="eager" />
             SOS DJEČIJE SELO
           </a>
-          <a href="#psychology" className="hover:text-white transition-colors">{t.nav.psychology}</a>
-          <a href="#effects" className="hover:text-white transition-colors">{t.nav.effects}</a>
-          <a href="#stories" className="hover:text-white transition-colors">Biblioteka</a>
+          <a
+            href={getPathForPage('methodology')}
+            onClick={(event) => {
+              event.preventDefault();
+              navigateToPage('methodology');
+            }}
+            className="hover:text-white transition-colors"
+          >
+            {t.nav.psychology}
+          </a>
+          <a
+            href={getPathForPage('ambients')}
+            onClick={(event) => {
+              event.preventDefault();
+              navigateToPage('ambients');
+            }}
+            className="hover:text-white transition-colors"
+          >
+            {t.nav.effects}
+          </a>
+          <a
+            href={getPathForPage('library')}
+            onClick={(event) => {
+              event.preventDefault();
+              navigateToPage('library');
+            }}
+            className="hover:text-white transition-colors"
+          >
+            Biblioteka
+          </a>
         </div>
 
         <div className="flex shrink-0 items-center gap-2 sm:gap-3">
