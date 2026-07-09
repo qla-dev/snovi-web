@@ -78,6 +78,7 @@ const brandLogoSrc = `${import.meta.env.BASE_URL}logo.png`;
 const qlaLogoSrc = 'https://deklarant.ai/build/images/logo-qla-dark.png';
 const dedicationImageSrc = `${import.meta.env.BASE_URL}img/snovi1.jpg`;
 const sosBackgroundSrc = `${import.meta.env.BASE_URL}img/sos-children-bg.jpg`;
+const sosFamilyBackgroundSrc = `${import.meta.env.BASE_URL}img/sos-family-bg.jpg`;
 const sosLogoSrc = `${import.meta.env.BASE_URL}img/sos-childrens-villages-logo.png`;
 const SITE_ORIGIN = 'https://snovi.fm';
 const OG_IMAGE_PATH = '/img/snovi34.jpg';
@@ -551,27 +552,52 @@ function SosDonationPage({
   );
 }
 
-function SosStorySection() {
+function SosStorySection({
+  onNavigate,
+}: {
+  onNavigate: (page: Page) => void;
+}) {
   return (
-    <section id="waitlist" className="bg-[#062c5f] px-6 py-20 text-white scroll-mt-28 md:py-28">
-      <div className="mx-auto grid max-w-7xl gap-12 lg:grid-cols-[0.85fr_1.15fr] lg:items-center">
-        <div>
-          <img src={sosLogoSrc} alt="SOS Dječije selo" className="mb-10 h-28 w-28 object-contain md:h-36 md:w-36" loading="lazy" />
+    <section id="waitlist" className="relative isolate overflow-hidden bg-[#062c5f] px-6 py-20 text-white scroll-mt-28 md:py-28">
+      <img
+        src={sosFamilyBackgroundSrc}
+        alt=""
+        className="absolute inset-0 -z-20 h-full w-full object-cover"
+        loading="lazy"
+        decoding="async"
+        referrerPolicy="no-referrer"
+      />
+      <div className="absolute inset-0 -z-10 bg-[linear-gradient(90deg,rgba(3,24,54,0.94),rgba(3,24,54,0.78)),linear-gradient(180deg,rgba(6,44,95,0.78),rgba(6,44,95,0.92))]" />
+      <div className="mx-auto grid max-w-7xl gap-12 lg:grid-cols-[1.15fr_0.85fr] lg:items-center">
+        <div className="lg:order-1">
+          <div className="grid gap-5 sm:grid-cols-2">
+            {[
+              'Kupovinom godišnje pretplate podržavate aplikaciju za mirnije porodične večeri.',
+              'snovi.fm od svake kupovine izdvaja 20% za SOS Dječija sela.',
+              'Dodatni iznos koji unesete ulazi direktno u ukupan SOS iznos ove kupovine.',
+              'Cilj je jednostavan: više priča za djecu, više podrške za djecu kojoj je dom najvažnija priča.',
+            ].map((item) => (
+              <div key={item} className="rounded-2xl border border-white/12 bg-white/8 p-6">
+                <Heart className="mb-5 h-6 w-6 text-emerald-300" />
+                <p className="text-lg font-medium leading-7 text-blue-50">{item}</p>
+              </div>
+            ))}
+          </div>
+          <a
+            href={SOS_DONATION_PATH}
+            onClick={(event) => {
+              event.preventDefault();
+              onNavigate('sosDonation');
+            }}
+            className="mt-8 inline-flex text-base font-black uppercase tracking-[0.16em] text-blue-100 underline decoration-blue-300/60 underline-offset-8 transition hover:text-white hover:decoration-white"
+          >
+            Kupi godišnju pretplatu i doniraj 10 KM SOS Dječijim selima
+          </a>
+        </div>
+        <div className="text-center lg:order-2 lg:text-left">
+          <img src={sosLogoSrc} alt="SOS Dječije selo" className="mx-auto mb-10 h-28 w-28 object-contain md:h-36 md:w-36 lg:mx-0" loading="lazy" />
           <p className="mb-5 text-[11px] font-black uppercase tracking-[0.36em] text-blue-200">priča iza donacije</p>
           <h2 className="font-serif text-5xl font-bold leading-[0.95] md:text-7xl">Miran san je lakši kad dijete ima siguran dom.</h2>
-        </div>
-        <div className="grid gap-5 sm:grid-cols-2">
-          {[
-            'Kupovinom godišnje pretplate podržavate aplikaciju za mirnije porodične večeri.',
-            'snovi.fm od svake kupovine izdvaja 20% za SOS Dječija sela.',
-            'Dodatni iznos koji unesete ulazi direktno u ukupan SOS iznos ove kupovine.',
-            'Cilj je jednostavan: više priča za djecu, više podrške za djecu kojoj je dom najvažnija priča.',
-          ].map((item) => (
-            <div key={item} className="rounded-2xl border border-white/12 bg-white/8 p-6">
-              <Heart className="mb-5 h-6 w-6 text-emerald-300" />
-              <p className="text-lg font-medium leading-7 text-blue-50">{item}</p>
-            </div>
-          ))}
         </div>
       </div>
     </section>
@@ -1005,10 +1031,6 @@ export default function App() {
         </div>
         
         <div className="hidden lg:flex items-center gap-10 text-[13px] uppercase tracking-widest font-bold text-slate-400">
-          <a href="#preview" className="hover:text-white transition-colors">{t.nav.preview}</a>
-          <a href="#psychology" className="hover:text-white transition-colors">{t.nav.psychology}</a>
-          <a href="#effects" className="hover:text-white transition-colors">{t.nav.effects}</a>
-          <a href="#waitlist" className="hover:text-white transition-colors">{t.nav.waitlist}</a>
           <a
             href={SOS_DONATION_PATH}
             onClick={(event) => {
@@ -1020,6 +1042,9 @@ export default function App() {
             <img src={sosLogoSrc} alt="" className="h-5 w-5 object-contain" loading="eager" />
             SOS DJEČIJE SELO
           </a>
+          <a href="#psychology" className="hover:text-white transition-colors">{t.nav.psychology}</a>
+          <a href="#effects" className="hover:text-white transition-colors">{t.nav.effects}</a>
+          <a href="#stories" className="hover:text-white transition-colors">Biblioteka</a>
         </div>
 
         <div className="flex shrink-0 items-center gap-2 sm:gap-3">
@@ -1296,7 +1321,7 @@ export default function App() {
       <div className="max-w-7xl mx-auto h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
 
       {/* SOS Story Section */}
-      <SosStorySection />
+      <SosStorySection onNavigate={navigateToPage} />
 
       <>
       <div className="max-w-7xl mx-auto h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
@@ -1635,6 +1660,7 @@ export default function App() {
         viewAllLabel={t.stories.viewAll}
         popularLabel={t.stories.popular}
         comingSoonLabel={t.stories.comingSoon}
+        onLockedStoryClick={() => navigateToPage('sosDonation')}
       />
 
       <div className="max-w-7xl mx-auto h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />

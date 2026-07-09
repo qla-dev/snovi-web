@@ -89,6 +89,7 @@ type LandingLibrarySectionProps = {
   viewAllLabel: string;
   popularLabel: string;
   comingSoonLabel: string;
+  onLockedStoryClick?: () => void;
 };
 
 type FixedMiniPlayerBarProps = {
@@ -1430,6 +1431,7 @@ function StoryTile({
   onTogglePlay,
   popularLabel,
   comingSoonLabel,
+  onLockedStoryClick,
   compact = false,
 }: {
   story: Story;
@@ -1439,9 +1441,18 @@ function StoryTile({
   onTogglePlay: (story: Story) => void;
   popularLabel: string;
   comingSoonLabel: string;
+  onLockedStoryClick?: () => void;
   compact?: boolean;
 }) {
   const canPlay = Boolean(story.sound);
+  const handleStoryClick = () => {
+    if (story.locked) {
+      onLockedStoryClick?.();
+      return;
+    }
+
+    void onTogglePlay(story);
+  };
 
   return (
     <motion.div
@@ -1452,11 +1463,11 @@ function StoryTile({
     >
       <div
         className={`relative cursor-pointer ${compact ? 'aspect-[3/4] md:aspect-[6/5]' : 'aspect-[3/5] md:aspect-[4/5]'}`}
-        onClick={() => void onTogglePlay(story)}
+        onClick={handleStoryClick}
         onKeyDown={(event) => {
           if (event.key === 'Enter' || event.key === ' ') {
             event.preventDefault();
-            void onTogglePlay(story);
+            handleStoryClick();
           }
         }}
         role="button"
@@ -1489,9 +1500,8 @@ function StoryTile({
 
         {story.locked ? (
           <div className="absolute right-4 top-4">
-            <span className="inline-flex items-center gap-1 rounded-full bg-amber-400 px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-black">
+            <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-amber-400 text-black">
               <Lock className="h-3 w-3" />
-              {comingSoonLabel}
             </span>
           </div>
         ) : null}
@@ -1515,9 +1525,13 @@ function StoryTile({
               type="button"
               onClick={(event) => {
                 event.stopPropagation();
+                if (story.locked) {
+                  onLockedStoryClick?.();
+                  return;
+                }
                 void onTogglePlay(story);
               }}
-              disabled={!canPlay}
+              disabled={!canPlay && !story.locked}
               className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full transition ${
                 selected && playing
                   ? 'bg-white text-black'
@@ -1957,6 +1971,7 @@ export function LandingLibrarySection({
   viewAllLabel,
   popularLabel,
   comingSoonLabel,
+  onLockedStoryClick,
 }: LandingLibrarySectionProps) {
   const copy = useUiCopy(lang);
   const currentCount = experience.filteredStories.length;
@@ -2097,6 +2112,7 @@ export function LandingLibrarySection({
                     onTogglePlay={experience.toggleStoryPlayback}
                     popularLabel={story.favorite ? copy.favorites : popularLabel}
                     comingSoonLabel={comingSoonLabel}
+                    onLockedStoryClick={onLockedStoryClick}
                     compact
                   />
                 </React.Fragment>
