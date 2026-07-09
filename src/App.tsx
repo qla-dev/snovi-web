@@ -584,6 +584,27 @@ export default function App() {
   }, []);
 
   useEffect(() => {
+    if (page !== 'app' || window.location.hash || !window.matchMedia('(max-width: 767px)').matches) {
+      return;
+    }
+
+    const previousScrollRestoration = window.history.scrollRestoration;
+    window.history.scrollRestoration = 'manual';
+
+    const scrollToTop = () => window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+    scrollToTop();
+
+    const frameId = window.requestAnimationFrame(scrollToTop);
+    const timeoutId = window.setTimeout(scrollToTop, 250);
+
+    return () => {
+      window.cancelAnimationFrame(frameId);
+      window.clearTimeout(timeoutId);
+      window.history.scrollRestoration = previousScrollRestoration;
+    };
+  }, [page]);
+
+  useEffect(() => {
     if (!landingExperience.isWaitlistModalOpen && !storeChoiceModalOpen) {
       return;
     }
@@ -1059,7 +1080,7 @@ export default function App() {
           </div>
 
           {/* Repositioned Widgets - Bottom Center */}
-          <div className="mt-48 flex flex-col md:flex-row items-center justify-center gap-8 md:gap-16">
+          <div className="hidden md:mt-24 md:flex md:flex-row items-center justify-center gap-8 md:gap-16">
             {/* Brain Sync Badge */}
             <AnimatedWidgetShell strength={0.85}>
             <motion.div 
@@ -1102,7 +1123,7 @@ export default function App() {
       <section className="py-20 px-6 bg-[#050505] relative overflow-hidden md:py-40">
         <div className="max-w-7xl mx-auto relative">
           {/* Floating Element in Ritual - Repositioned for better visibility */}
-          <AnimatedWidgetShell className="absolute -top-20 left-1/2 z-50 -translate-x-1/2 md:-left-10 md:top-0 md:translate-x-0">
+          <AnimatedWidgetShell className="absolute -top-20 left-1/2 z-50 hidden -translate-x-1/2 md:-left-10 md:top-0 md:block md:translate-x-0">
           <motion.div 
             animate={{ y: [0, 20, 0], rotate: [-5, 5, -5] }}
             transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
@@ -1200,7 +1221,7 @@ export default function App() {
             <div className="relative">
               {/* Floating Sound Waves in Effects */}
               {/* New Floating Element: Spatial Audio */}
-              <AnimatedWidgetShell className="absolute -top-20 left-1/2 z-50 -translate-x-1/2" strength={0.85}>
+              <AnimatedWidgetShell className="absolute -top-20 left-1/2 z-50 hidden -translate-x-1/2 md:block" strength={0.85}>
               <motion.div 
                 animate={{ y: [0, -20, 0] }}
                 transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
@@ -1216,10 +1237,10 @@ export default function App() {
                 <motion.div 
                   animate={{ rotate: 360 }}
                   transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-                  className="w-full h-full border-2 border-dashed border-white/10 rounded-full flex items-center justify-center"
+                  className="aspect-square w-full rounded-full border-2 border-dashed border-white/10 flex items-center justify-center"
                 >
-                  <div className="w-3/4 h-3/4 border-2 border-dashed border-white/20 rounded-full flex items-center justify-center">
-                    <div className="w-1/2 h-1/2 border-2 border-dashed border-white/30 rounded-full" />
+                  <div className="aspect-square w-3/4 rounded-full border-2 border-dashed border-white/20 flex items-center justify-center">
+                    <div className="aspect-square w-1/2 rounded-full border-2 border-dashed border-white/30" />
                   </div>
                 </motion.div>
                 
