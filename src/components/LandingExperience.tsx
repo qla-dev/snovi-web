@@ -99,6 +99,8 @@ type FixedMiniPlayerBarProps = {
 
 const PUBLIC_BASE_URL = import.meta.env.BASE_URL;
 const FALLBACK_IMAGE = `${PUBLIC_BASE_URL}img/snovi34.jpg`;
+const API_BASE_URL = String(import.meta.env.VITE_SNOVI_API_BASE_URL || 'https://snovi.qla.dev/api').replace(/\/+$/, '');
+const PUBLISHED_STORIES_URL = `${API_BASE_URL}/stories/published?limit=60&sort=asc`;
 const ALL_MAIN_TAB_ID = 'LIBRARY_ALL';
 const ALL_SUB_TAB_ID = 'ALL';
 const DEFAULT_MUSIC_LEVEL = 2;
@@ -208,7 +210,7 @@ function prioritizeStories<T extends Story>(stories: T[]) {
 }
 
 function isStoryPlayable(story: Story | null | undefined) {
-  return Boolean(story?.sound) && isPrimaryStory(story);
+  return Boolean(story?.sound) && !story?.locked;
 }
 
 function uniqueStrings(values: Array<string | null | undefined>) {
@@ -384,43 +386,65 @@ function normalizeSubcategory(raw: Record<string, unknown>): Subcategory | null 
   };
 }
 
-const STATIC_CATEGORIES: Category[] = [
-  { id: 1, slug: 'price', label: 'Priče' },
-  { id: 2, slug: 'ambijenti', label: 'Ambijenti' },
-];
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+}
 
-const STATIC_SUBCATEGORIES: Subcategory[] = [
-  { id: 1, slug: 'za-laku-noc', label: 'Za laku noć', categoryId: 1 },
-  { id: 2, slug: 'klasici', label: 'Klasici', categoryId: 1 },
-];
+function extractApiCollection(payload: unknown) {
+  if (Array.isArray(payload)) {
+    return payload;
+  }
 
-const STATIC_STORIES: Story[] = prioritizeStories([
-  normalizeStory({
-    id: 1,
-    slug: 'cvrcak-i-mrav',
-    title: 'Cvrčak i mrav',
-    narrator: 'snovi.fm',
-    duration: '08:30',
-    image: `${PUBLIC_BASE_URL}img/snovi34.jpg`,
-    category_id: 1,
-    category_label: 'Priče',
-    subcategory_id: 1,
-    subcategory_label: 'Za laku noć',
-    locked: false,
-    favorite: true,
-  }),
-  normalizeStory({
-    id: 2,
-    slug: 'nocna-suma',
-    title: 'Noćna šuma',
-    narrator: 'snovi.fm',
-    duration: '06:10',
-    image: `${PUBLIC_BASE_URL}img/snovi2.jpg`,
-    category_id: 2,
-    category_label: 'Ambijenti',
-    locked: false,
-  }),
-]);
+  if (!isRecord(payload)) {
+    return [];
+  }
+
+  return Array.isArray(payload.data) ? payload.data : [];
+}
+
+function slugFromLabel(label: string, fallback: string | number) {
+  const slug = normalizeComparableText(label).replace(/\s+/g, '-');
+  return slug || String(fallback);
+}
+
+function deriveCategoriesFromStories(stories: Story[]) {
+  const categoriesById = new Map<number, Category>();
+
+  stories.forEach((story) => {
+    if (!story.categoryId || categoriesById.has(story.categoryId)) {
+      return;
+    }
+
+    const label = story.categoryLabel || String(story.categoryId);
+    categoriesById.set(story.categoryId, {
+      id: story.categoryId,
+      slug: slugFromLabel(label, story.categoryId),
+      label,
+    });
+  });
+
+  return Array.from(categoriesById.values());
+}
+
+function deriveSubcategoriesFromStories(stories: Story[]) {
+  const subcategoriesById = new Map<number, Subcategory>();
+
+  stories.forEach((story) => {
+    if (!story.subcategoryId || subcategoriesById.has(story.subcategoryId)) {
+      return;
+    }
+
+    const label = story.subcategoryLabel || String(story.subcategoryId);
+    subcategoriesById.set(story.subcategoryId, {
+      id: story.subcategoryId,
+      slug: slugFromLabel(label, story.subcategoryId),
+      label,
+      categoryId: story.categoryId,
+    });
+  });
+
+  return Array.from(subcategoriesById.values());
+}
 
 function getProgressRatio(currentTime: number, duration: number | null) {
   if (!duration || duration <= 0) {
@@ -431,12 +455,12 @@ function getProgressRatio(currentTime: number, duration: number | null) {
 }
 
 export function useLandingExperience() {
-  const [status] = useState<'idle' | 'loading' | 'ready' | 'error'>('ready');
-  const [errorMessage] = useState('');
-  const [apiBaseUrl] = useState('');
-  const [categories] = useState<Category[]>(STATIC_CATEGORIES);
-  const [subcategories] = useState<Subcategory[]>(STATIC_SUBCATEGORIES);
-  const [stories] = useState<Story[]>(STATIC_STORIES);
+  const [status, setStatus] = useState<'idle' | 'loading' | 'ready' | 'error'>('loading');
+  const [errorMessage, setErrorMessage] = useState('');
+  const apiBaseUrl = API_BASE_URL;
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [subcategories, setSubcategories] = useState<Subcategory[]>([]);
+  const [stories, setStories] = useState<Story[]>([]);
   const [mainTab, setMainTab] = useState<MainTabId>(ALL_MAIN_TAB_ID);
   const [subTab, setSubTab] = useState<SubTabId>(ALL_SUB_TAB_ID);
   const [search, setSearch] = useState('');
@@ -455,6 +479,7 @@ export function useLandingExperience() {
   const selectedStoryRef = useRef<Story | null>(null);
   const effectLevelsRef = useRef<MixerLevels>(createEmptyMixerLevels());
   const pendingStoryDefaultsOnPlayRef = useRef(false);
+  const attemptedInitialPlaybackRef = useRef(false);
 
   const ensurePrimaryAudio = useCallback(() => {
     if (audioElement) {
@@ -535,8 +560,67 @@ export function useLandingExperience() {
   }, []);
 
   useEffect(() => {
-    window.__SNOVI_BOOT_MARK__?.('Library API skipped', 'using static landing preview data');
-  }, []);
+    let isActive = true;
+    const controller = new AbortController();
+
+    async function loadPublishedStories() {
+      setStatus('loading');
+      setErrorMessage('');
+      window.__SNOVI_BOOT_MARK__?.('Library API requested', apiBaseUrl);
+
+      try {
+        const response = await fetch(PUBLISHED_STORIES_URL, {
+          headers: { Accept: 'application/json' },
+          signal: controller.signal,
+        });
+
+        if (!response.ok) {
+          throw new Error(`Backend returned ${response.status}`);
+        }
+
+        const payload = await response.json();
+        const nextStories = prioritizeStories(
+          extractApiCollection(payload)
+            .filter(isRecord)
+            .map(normalizeStory),
+        );
+
+        if (!isActive) {
+          return;
+        }
+
+        setStories(nextStories);
+        setCategories(deriveCategoriesFromStories(nextStories));
+        setSubcategories(deriveSubcategoriesFromStories(nextStories));
+        setSelectedStoryId((currentStoryId) => (
+          currentStoryId && nextStories.some((story) => story.id === currentStoryId)
+            ? currentStoryId
+            : null
+        ));
+        setStatus('ready');
+        window.__SNOVI_BOOT_MARK__?.('Library API loaded', `${nextStories.length} stories`);
+      } catch (error) {
+        if (!isActive || controller.signal.aborted) {
+          return;
+        }
+
+        setStories([]);
+        setCategories([]);
+        setSubcategories([]);
+        setSelectedStoryId(null);
+        setStatus('error');
+        setErrorMessage(error instanceof Error ? error.message : 'Backend story request failed');
+        window.__SNOVI_BOOT_MARK__?.('Library API failed', error instanceof Error ? error.message : undefined);
+      }
+    }
+
+    void loadPublishedStories();
+
+    return () => {
+      isActive = false;
+      controller.abort();
+    };
+  }, [apiBaseUrl]);
 
   const subcategoriesByCategory = useMemo(() => {
     const map = new Map<number, Subcategory[]>();
@@ -954,6 +1038,16 @@ export function useLandingExperience() {
     playbackAudio.pause();
   }, [ensureAuxiliaryAudio, ensurePrimaryAudio, selectedStory]);
 
+  useEffect(() => {
+    if (attemptedInitialPlaybackRef.current || status !== 'ready' || !isStoryPlayable(selectedStory)) {
+      return;
+    }
+
+    attemptedInitialPlaybackRef.current = true;
+    window.__SNOVI_BOOT_MARK__?.('Initial autoplay requested');
+    void togglePlayPause();
+  }, [selectedStory, status, togglePlayPause]);
+
   const toggleStoryPlayback = useCallback(
     async (story: Story) => {
       if (selectedStory?.id === story.id) {
@@ -1113,9 +1207,29 @@ function DeviceMiniPlayer({
   onSeekBackward: () => void;
 }) {
   const copy = useUiCopy(lang);
-  const title = story?.title || 'SNOVI';
-  const image = story?.image || FALLBACK_IMAGE;
   const controlsDisabled = !story?.sound;
+
+  if (!story) {
+    return (
+      <div className="relative overflow-hidden border-t border-white/5 bg-[#071728]/95">
+        <div className="flex min-h-[72px] items-center justify-between gap-3 px-4 py-3">
+          <div className="flex min-w-0 flex-1 items-center gap-3">
+            <div className="h-11 w-11 shrink-0 animate-pulse rounded-xl bg-white/[0.06]" />
+            <div className="min-w-0 flex-1 space-y-2">
+              <div className="h-2.5 w-20 animate-pulse rounded-full bg-violet-400/20" />
+              <div className="h-3.5 w-32 animate-pulse rounded-full bg-white/10" />
+            </div>
+          </div>
+          <div className="flex shrink-0 items-center gap-2">
+            <div className="h-9 w-9 animate-pulse rounded-full bg-white/[0.06]" />
+            <div className="h-10 w-10 animate-pulse rounded-full bg-white/[0.08]" />
+            <div className="h-9 w-9 animate-pulse rounded-full bg-white/[0.06]" />
+          </div>
+        </div>
+        <div className="h-[3px] w-full bg-white/10" />
+      </div>
+    );
+  }
 
   return (
     <div className="relative overflow-hidden border-t border-white/5 bg-[#071728]/95">
@@ -1123,8 +1237,8 @@ function DeviceMiniPlayer({
         <div className="flex min-w-0 flex-1 items-center gap-3">
           <div className="h-11 w-11 shrink-0 overflow-hidden rounded-xl bg-[#111827]">
             <img
-              src={image}
-              alt={title}
+              src={story.image}
+              alt={story.title}
               className="h-full w-full object-cover"
               referrerPolicy="no-referrer"
               loading="lazy"
@@ -1135,7 +1249,7 @@ function DeviceMiniPlayer({
             <p className="truncate whitespace-nowrap text-[8px] font-black uppercase leading-none tracking-[0.22em] text-violet-400 sm:text-[9px]">
               {copy.nowPlaying}
             </p>
-            <p className="truncate pt-1 text-sm font-semibold leading-none text-white">{title}</p>
+            <p className="truncate pt-1 text-sm font-semibold leading-none text-white">{story.title}</p>
           </div>
         </div>
 
@@ -1380,7 +1494,10 @@ function DeviceLibraryPreview({
   experience,
 }: HeroDeviceShowcaseProps) {
   const copy = useUiCopy(lang);
-  const previewStories = (experience.filteredStories.length ? experience.filteredStories : experience.stories).slice(0, 4);
+  const isLoadingLibrary = experience.status === 'loading';
+  const previewStories = isLoadingLibrary
+    ? []
+    : (experience.filteredStories.length ? experience.filteredStories : experience.stories).slice(0, 4);
 
   return (
     <div className="relative flex h-full flex-col overflow-hidden bg-[#041221] text-white">
@@ -1396,7 +1513,7 @@ function DeviceLibraryPreview({
             </h4>
           </div>
           <div className="rounded-2xl border border-white/10 bg-black/35 px-3 py-2 text-[9px] font-black uppercase tracking-[0.18em] text-emerald-300">
-            {experience.filteredStories.length || experience.stories.length} {copy.previewResults}
+            {isLoadingLibrary ? '...' : experience.filteredStories.length || experience.stories.length} {copy.previewResults}
           </div>
         </div>
 
@@ -1464,34 +1581,45 @@ function DeviceLibraryPreview({
           </div>
         ) : null}
 
-        <div className="mt-4 grid grid-cols-2 gap-3">
-          {previewStories.map((story) => (
-            <button
-              key={story.id}
-              type="button"
-              onClick={() => experience.selectStory(story)}
-              className={`overflow-hidden rounded-[1.2rem] border text-left ${
-                experience.selectedStory?.id === story.id ? 'border-violet-500/80' : 'border-white/5'
-              }`}
-            >
-              <div className="relative aspect-[4/5]">
-                <img
-                  src={story.image}
-                  alt={story.title}
-                  className="h-full w-full object-cover"
-                  referrerPolicy="no-referrer"
-                  loading="lazy"
-                  decoding="async"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black via-black/10 to-transparent" />
-                <div className="absolute inset-x-0 bottom-0 p-3">
-                  <p className="line-clamp-2 text-sm font-bold text-white">{story.title}</p>
-                  <p className="mt-1 text-[9px] font-black uppercase tracking-[0.18em] text-slate-300">{story.duration}</p>
+        {isLoadingLibrary ? (
+          <div className="mt-4 grid grid-cols-2 gap-3">
+            {Array.from({ length: 4 }).map((_, index) => (
+              <div
+                key={`device-library-skeleton-${index}`}
+                className="aspect-[4/5] animate-pulse rounded-[1.2rem] border border-white/5 bg-white/[0.05]"
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="mt-4 grid grid-cols-2 gap-3">
+            {previewStories.map((story) => (
+              <button
+                key={story.id}
+                type="button"
+                onClick={() => experience.selectStory(story)}
+                className={`overflow-hidden rounded-[1.2rem] border text-left ${
+                  experience.selectedStory?.id === story.id ? 'border-violet-500/80' : 'border-white/5'
+                }`}
+              >
+                <div className="relative aspect-[4/5]">
+                  <img
+                    src={story.image}
+                    alt={story.title}
+                    className="h-full w-full object-cover"
+                    referrerPolicy="no-referrer"
+                    loading="lazy"
+                    decoding="async"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black via-black/10 to-transparent" />
+                  <div className="absolute inset-x-0 bottom-0 p-3">
+                    <p className="line-clamp-2 text-sm font-bold text-white">{story.title}</p>
+                    <p className="mt-1 text-[9px] font-black uppercase tracking-[0.18em] text-slate-300">{story.duration}</p>
+                  </div>
                 </div>
-              </div>
-            </button>
-          ))}
-        </div>
+              </button>
+            ))}
+          </div>
+        )}
 
         <p className="mt-4 text-[10px] font-medium leading-4 text-slate-400">{copy.deviceLibraryHint}</p>
       </div>
@@ -1518,6 +1646,7 @@ function DeviceHomePreview({
   experience,
 }: HeroDeviceShowcaseProps) {
   const copy = useUiCopy(lang);
+  const isLoadingLibrary = experience.status === 'loading';
   const currentStory = experience.selectedStory;
   const quickPicks = experience.stories
     .filter((story) => story.id !== currentStory?.id)
@@ -1530,43 +1659,58 @@ function DeviceHomePreview({
 
       <div className="relative flex-1 px-4 pb-32 pt-5">
         <p className="text-[9px] font-black uppercase tracking-[0.3em] text-violet-400">{copy.deviceHomeKicker}</p>
-        <div className="mt-4 overflow-hidden rounded-[2rem] border border-white/8 bg-white/[0.04]">
-          <div className="relative aspect-[4/5]">
-            <img
-              src={currentStory?.image || FALLBACK_IMAGE}
-              alt={currentStory?.title || 'SNOVI'}
-              className="h-full w-full object-cover"
-              referrerPolicy="no-referrer"
-              loading="lazy"
-              decoding="async"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-black via-black/10 to-transparent" />
-            <div className="absolute inset-x-0 bottom-0 p-4">
-              <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/40 px-3 py-1 text-[9px] font-black uppercase tracking-[0.18em] text-slate-200">
-                <Sparkles className="h-3.5 w-3.5 text-violet-400" />
-                {copy.selectedStory}
+        {currentStory ? (
+          <div className="mt-4 overflow-hidden rounded-[2rem] border border-white/8 bg-white/[0.04]">
+            <div className="relative aspect-[4/5]">
+              <img
+                src={currentStory.image}
+                alt={currentStory.title}
+                className="h-full w-full object-cover"
+                referrerPolicy="no-referrer"
+                loading="lazy"
+                decoding="async"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black via-black/10 to-transparent" />
+              <div className="absolute inset-x-0 bottom-0 p-4">
+                <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/40 px-3 py-1 text-[9px] font-black uppercase tracking-[0.18em] text-slate-200">
+                  <Sparkles className="h-3.5 w-3.5 text-violet-400" />
+                  {copy.selectedStory}
+                </div>
+                <h4 className="mt-4 text-3xl font-serif font-bold leading-[1.02] text-white">{currentStory.title}</h4>
+                <p className="mt-2 text-[11px] font-black uppercase tracking-[0.18em] text-slate-300">
+                  {currentStory.duration} - {currentStory.narrator}
+                </p>
               </div>
-              <h4 className="mt-4 text-3xl font-serif font-bold leading-[1.02] text-white">{currentStory?.title || 'SNOVI'}</h4>
-              <p className="mt-2 text-[11px] font-black uppercase tracking-[0.18em] text-slate-300">
-                {currentStory?.duration || '--:--'} - {currentStory?.narrator || 'SNOVI'}
-              </p>
             </div>
           </div>
-        </div>
+        ) : (
+          <div className="mt-4 aspect-[4/5] animate-pulse rounded-[2rem] border border-white/8 bg-white/[0.05]" />
+        )}
 
         <div className="hide-scrollbar mt-4 overflow-x-auto pb-1">
-          <div className="flex w-max gap-2 pr-2">
-            {[currentStory?.categoryLabel, currentStory?.subcategoryLabel, currentStory?.sound ? 'Audio' : copy.noAudio]
-              .filter(Boolean)
-              .map((label) => (
+          {currentStory ? (
+            <div className="flex w-max gap-2 pr-2">
+              {[currentStory.categoryLabel, currentStory.subcategoryLabel, currentStory.sound ? 'Audio' : copy.noAudio]
+                .filter(Boolean)
+                .map((label) => (
+                  <span
+                    key={label}
+                    className="shrink-0 rounded-full border border-white/8 bg-white/[0.03] px-3 py-2 text-[10px] font-black uppercase tracking-[0.18em] text-slate-300"
+                  >
+                    {label}
+                  </span>
+                ))}
+            </div>
+          ) : (
+            <div className="flex w-max gap-2 pr-2">
+              {Array.from({ length: 3 }).map((_, index) => (
                 <span
-                  key={label}
-                  className="shrink-0 rounded-full border border-white/8 bg-white/[0.03] px-3 py-2 text-[10px] font-black uppercase tracking-[0.18em] text-slate-300"
-                >
-                  {label}
-                </span>
+                  key={`device-chip-skeleton-${index}`}
+                  className="h-8 w-24 shrink-0 animate-pulse rounded-full border border-white/8 bg-white/[0.05]"
+                />
               ))}
-          </div>
+            </div>
+          )}
         </div>
 
         <div className="mt-6">
@@ -1576,30 +1720,41 @@ function DeviceHomePreview({
               {experience.apiBaseUrl ? 'API' : 'SYNC'}
             </span>
           </div>
-          <div className="grid grid-cols-3 gap-2">
-            {quickPicks.map((story) => (
-              <button
-                key={story.id}
-                type="button"
-                onClick={() => experience.selectStory(story)}
-                className="overflow-hidden rounded-[1rem] border border-white/5 bg-white/[0.03] text-left"
-              >
-                <div className="aspect-square">
-                  <img
-                    src={story.image}
-                    alt={story.title}
-                    className="h-full w-full object-cover"
-                    referrerPolicy="no-referrer"
-                    loading="lazy"
-                    decoding="async"
-                  />
-                </div>
-                <div className="p-2">
-                  <p className="line-clamp-2 text-[10px] font-bold leading-3.5 text-white">{story.title}</p>
-                </div>
-              </button>
-            ))}
-          </div>
+          {isLoadingLibrary ? (
+            <div className="grid grid-cols-3 gap-2">
+              {Array.from({ length: 3 }).map((_, index) => (
+                <div
+                  key={`device-quick-pick-skeleton-${index}`}
+                  className="aspect-square animate-pulse rounded-[1rem] border border-white/5 bg-white/[0.05]"
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="grid grid-cols-3 gap-2">
+              {quickPicks.map((story) => (
+                <button
+                  key={story.id}
+                  type="button"
+                  onClick={() => experience.selectStory(story)}
+                  className="overflow-hidden rounded-[1rem] border border-white/5 bg-white/[0.03] text-left"
+                >
+                  <div className="aspect-square">
+                    <img
+                      src={story.image}
+                      alt={story.title}
+                      className="h-full w-full object-cover"
+                      referrerPolicy="no-referrer"
+                      loading="lazy"
+                      decoding="async"
+                    />
+                  </div>
+                  <div className="p-2">
+                    <p className="line-clamp-2 text-[10px] font-bold leading-3.5 text-white">{story.title}</p>
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 

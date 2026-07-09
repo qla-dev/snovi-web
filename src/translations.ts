@@ -27,7 +27,7 @@ export const translations = {
         parents: '50k+ Roditelja',
       },
       download: {
-        appStore: 'Uskoro na App Store',
+        appStore: 'Dostupno na App Store',
         googlePlay: 'Uskoro na Google Play',
       },
       review: {
@@ -191,7 +191,7 @@ export const translations = {
         parents: '50k+ Parents',
       },
       download: {
-        appStore: 'Soon on App Store',
+        appStore: 'Available on App Store',
         googlePlay: 'Soon on Google Play',
       },
       review: {

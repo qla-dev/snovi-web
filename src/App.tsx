@@ -77,7 +77,8 @@ const qlaLogoSrc = 'https://deklarant.ai/build/images/logo-qla-dark.png';
 const dedicationImageSrc = `${import.meta.env.BASE_URL}img/snovi1.jpg`;
 const SITE_ORIGIN = 'https://snovi.fm';
 const OG_IMAGE_PATH = '/img/snovi34.jpg';
-const APP_STORE_URL = 'https://apps.apple.com/ba/app/snovi-fm/id6758638251';
+const APP_STORE_URL = 'https://apps.apple.com/us/app/snovi-fm/id6758638251';
+type StorePlatform = 'ios' | 'android';
 
 type Page = 'app' | 'privacy' | 'terms' | 'cookies';
 
@@ -146,6 +147,36 @@ function getPathForPage(page: Page) {
   return `/${page}`;
 }
 
+function detectMobileStorePlatform(): StorePlatform | null {
+  if (typeof navigator === 'undefined' || typeof window === 'undefined') {
+    return null;
+  }
+
+  const userAgent = navigator.userAgent || '';
+  const platform = navigator.platform || '';
+  const userAgentDataMobile = Boolean((navigator as Navigator & { userAgentData?: { mobile?: boolean } }).userAgentData?.mobile);
+  const hasTouch = navigator.maxTouchPoints > 0 || window.matchMedia('(pointer: coarse)').matches;
+  const isIpadOS = platform === 'MacIntel' && navigator.maxTouchPoints > 1;
+
+  if (!hasTouch && !userAgentDataMobile) {
+    return null;
+  }
+
+  if (/Android/i.test(userAgent)) {
+    return 'android';
+  }
+
+  if (/iPhone|iPad|iPod/i.test(userAgent) || isIpadOS) {
+    return 'ios';
+  }
+
+  return null;
+}
+
+function showAndroidComingSoon() {
+  window.alert('Uskoro');
+}
+
 function upsertMeta(selector: string, attributes: Record<string, string>) {
   let element = document.head.querySelector<HTMLMetaElement>(selector);
 
@@ -174,6 +205,62 @@ function upsertLink(selector: string, attributes: Record<string, string>) {
 
 function BrandLogo({ className = '', loading = 'lazy' }: { className?: string; loading?: 'eager' | 'lazy' }) {
   return <img src={brandLogoSrc} alt="snovi.fm" className={className} loading={loading} decoding="async" />;
+}
+
+function splitStoreLabel(label: string) {
+  const parts = label.trim().split(/\s+/);
+
+  return {
+    eyebrow: parts[0] || label,
+    title: parts.slice(1).join(' ') || label,
+  };
+}
+
+function StoreDownloadButton({
+  platform,
+  label,
+  variant,
+}: {
+  platform: StorePlatform;
+  label?: string;
+  variant: 'header' | 'hero';
+}) {
+  const Icon = platform === 'ios' ? Apple : PlayCircle;
+  const storeLabel = label ?? (platform === 'ios' ? 'Preuzmi za iOS' : 'Preuzmi za Android');
+  const splitLabel = splitStoreLabel(storeLabel);
+  const className = variant === 'hero'
+    ? 'flex h-16 min-w-0 items-center justify-center gap-3 rounded-2xl bg-white px-4 text-black shadow-2xl shadow-white/10 transition-all hover:bg-violet-500 hover:text-white md:h-20 md:w-auto md:px-8 group'
+    : 'inline-flex h-10 min-w-0 shrink-0 items-center justify-center gap-2 rounded-full bg-white px-3 text-[10px] font-black uppercase tracking-[0.12em] text-black shadow-[0_12px_30px_-18px_rgba(255,255,255,0.8)] transition-all hover:bg-violet-500 hover:text-white sm:h-11 sm:px-4 sm:text-[11px]';
+
+  const content = variant === 'hero' ? (
+    <>
+      <Icon className="h-6 w-6 shrink-0 md:h-7 md:w-7" />
+      <div className="min-w-0 text-left">
+        <p className="mb-1 text-[9px] leading-none opacity-70 md:text-[10px]">{splitLabel.eyebrow}</p>
+        <p className="whitespace-nowrap text-[11px] font-black uppercase leading-none tracking-[0.08em] md:text-base md:tracking-[0.2em]">{splitLabel.title}</p>
+      </div>
+    </>
+  ) : (
+    <>
+      <Icon className="h-4 w-4 shrink-0" />
+      <span className="hidden whitespace-nowrap sm:inline">{storeLabel}</span>
+      <span className="whitespace-nowrap sm:hidden">Preuzmi</span>
+    </>
+  );
+
+  if (platform === 'ios') {
+    return (
+      <a href={APP_STORE_URL} target="_blank" rel="noopener noreferrer" className={className}>
+        {content}
+      </a>
+    );
+  }
+
+  return (
+    <button type="button" onClick={showAndroidComingSoon} className={className}>
+      {content}
+    </button>
+  );
 }
 
 type WaitlistCopy = (typeof translations)['bs']['waitlist'];
@@ -354,6 +441,7 @@ export default function App() {
   const [lang, setLang] = useState<Language>('bs');
   const [page, setPage] = useState<Page>(() => getPageFromPath());
   const [scrolled, setScrolled] = useState(false);
+  const [headerStorePlatform, setHeaderStorePlatform] = useState<StorePlatform | null>(() => detectMobileStorePlatform());
   const [showHeroParticles, setShowHeroParticles] = useState(() => {
     if (typeof window === 'undefined') {
       return false;
@@ -423,6 +511,19 @@ export default function App() {
     const handleScroll = () => setScrolled(window.scrollY > 50);
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  useEffect(() => {
+    const syncHeaderStorePlatform = () => {
+      setHeaderStorePlatform(detectMobileStorePlatform());
+    };
+
+    syncHeaderStorePlatform();
+    window.addEventListener('resize', syncHeaderStorePlatform);
+
+    return () => {
+      window.removeEventListener('resize', syncHeaderStorePlatform);
+    };
   }, []);
 
   useEffect(() => {
@@ -533,6 +634,7 @@ export default function App() {
   }, []);
 
   const toggleLang = () => setLang(prev => prev === 'bs' ? 'en' : 'bs');
+  const headerStorePlatforms: StorePlatform[] = headerStorePlatform ? [headerStorePlatform] : ['ios', 'android'];
 
   if (page !== 'app') {
     return <LegalPage page={page} lang={lang} onNavigate={navigateToPage} />;
@@ -542,9 +644,9 @@ export default function App() {
     <MotionConfig reducedMotion={reducePageMotion ? 'always' : 'user'}>
     <div className="min-h-screen bg-[#050505] pb-28 font-sans text-white selection:bg-violet-500/30 md:pb-36">
       {/* Navigation */}
-      <nav className={`fixed inset-x-0 top-0 z-[100] flex items-center justify-between px-6 transition-colors duration-500 ${scrolled ? 'glass border-b border-white/5' : 'bg-transparent'}`}>
-        <div className="flex items-center">
-          <BrandLogo className="h-20 w-auto max-w-[320px] md:h-24 md:max-w-[380px]" loading="eager" />
+      <nav className={`fixed inset-x-0 top-0 z-[100] flex items-center justify-between gap-3 px-4 transition-colors duration-500 md:px-6 ${scrolled ? 'glass border-b border-white/5' : 'bg-transparent'}`}>
+        <div className="flex min-w-0 items-center">
+          <BrandLogo className="h-16 w-auto max-w-[190px] sm:h-20 sm:max-w-[320px] md:h-24 md:max-w-[380px]" loading="eager" />
         </div>
         
         <div className="hidden lg:flex items-center gap-10 text-[13px] uppercase tracking-widest font-bold text-slate-400">
@@ -554,20 +656,23 @@ export default function App() {
           <a href="#waitlist" className="hover:text-white transition-colors">{t.nav.waitlist}</a>
         </div>
 
-        <div className="flex items-center gap-4">
+        <div className="flex shrink-0 items-center gap-2 sm:gap-3">
           <button 
             onClick={toggleLang}
-            className="flex items-center gap-2 px-4 py-2 rounded-full glass hover:bg-white/10 transition-all text-[11px] font-black tracking-widest"
+            className="hidden items-center gap-2 rounded-full px-4 py-2 text-[11px] font-black tracking-widest transition-all hover:bg-white/10"
           >
             <Globe className="w-3 h-3 text-violet-400" />
             {lang.toUpperCase()}
           </button>
-          <button 
-            onClick={() => document.getElementById('waitlist')?.scrollIntoView({ behavior: 'smooth' })}
-            className="hidden sm:flex px-6 py-2.5 bg-white text-black rounded-full text-xs font-black uppercase tracking-widest hover:bg-violet-500 hover:text-white transition-all"
-          >
-            {t.hero.cta}
-          </button>
+          {headerStorePlatforms.map((platform) => (
+            <React.Fragment key={platform}>
+              <StoreDownloadButton
+                platform={platform}
+                variant="header"
+                label={platform === 'ios' ? 'Preuzmi za iOS' : 'Preuzmi za Android'}
+              />
+            </React.Fragment>
+          ))}
         </div>
       </nav>
 
@@ -654,26 +759,8 @@ export default function App() {
               </button>
 
               <div className="grid w-full grid-cols-2 gap-4 md:flex md:w-auto md:gap-6">
-                <a
-                  href={APP_STORE_URL}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex h-16 min-w-0 items-center justify-center gap-3 rounded-2xl bg-white px-4 text-black shadow-2xl shadow-white/10 transition-all hover:bg-violet-500 hover:text-white md:h-20 md:w-auto md:px-8 group"
-                >
-                  <Apple className="h-6 w-6 shrink-0 md:h-7 md:w-7" />
-                  <div className="min-w-0 text-left">
-                    <p className="mb-1 text-[9px] leading-none opacity-70 md:text-[10px]">{t.hero.download.appStore.split(' ')[0]}</p>
-                    <p className="whitespace-nowrap text-[11px] font-black uppercase leading-none tracking-[0.08em] md:text-base md:tracking-[0.2em]">{t.hero.download.appStore.split(' ').slice(1).join(' ')}</p>
-                  </div>
-                </a>
-
-                <button className="flex h-16 min-w-0 items-center justify-center gap-3 rounded-2xl bg-white px-4 text-black shadow-2xl shadow-white/10 transition-all hover:bg-violet-500 hover:text-white md:h-20 md:w-auto md:px-8 group">
-                  <PlayCircle className="h-6 w-6 shrink-0 md:h-7 md:w-7" />
-                  <div className="min-w-0 text-left">
-                    <p className="mb-1 text-[9px] leading-none opacity-70 md:text-[10px]">{t.hero.download.googlePlay.split(' ')[0]}</p>
-                    <p className="whitespace-nowrap text-[11px] font-black uppercase leading-none tracking-[0.08em] md:text-base md:tracking-[0.2em]">{t.hero.download.googlePlay.split(' ').slice(1).join(' ')}</p>
-                  </div>
-                </button>
+                <StoreDownloadButton platform="ios" variant="hero" label={t.hero.download.appStore} />
+                <StoreDownloadButton platform="android" variant="hero" label={t.hero.download.googlePlay} />
               </div>
             </motion.div>
           </div>
