@@ -29,7 +29,9 @@ import {
   Mail,
   Users,
   Shield,
-  X
+  X,
+  CreditCard,
+  Plus,
 } from 'lucide-react';
 import { translations, Language } from './translations';
 import {
@@ -75,12 +77,15 @@ function AnimatedWidgetShell({ children, className = '', strength = 1 }: Animate
 const brandLogoSrc = `${import.meta.env.BASE_URL}logo.png`;
 const qlaLogoSrc = 'https://deklarant.ai/build/images/logo-qla-dark.png';
 const dedicationImageSrc = `${import.meta.env.BASE_URL}img/snovi1.jpg`;
+const sosBackgroundSrc = `${import.meta.env.BASE_URL}img/sos-children-bg.jpg`;
+const sosLogoSrc = `${import.meta.env.BASE_URL}img/sos-childrens-villages-logo.png`;
 const SITE_ORIGIN = 'https://snovi.fm';
 const OG_IMAGE_PATH = '/img/snovi34.jpg';
+const SOS_DONATION_PATH = '/donacija-za-sos-djecije-selo';
 const APP_STORE_URL = 'https://apps.apple.com/us/app/snovi-fm/id6758638251';
 type StorePlatform = 'ios' | 'android';
 
-type Page = 'app' | 'privacy' | 'terms' | 'cookies';
+type Page = 'app' | 'privacy' | 'terms' | 'cookies' | 'sosDonation';
 
 type PageMeta = {
   title: string;
@@ -114,6 +119,12 @@ const PAGE_META: Record<Page, PageMeta> = {
     keywords: 'snovi.fm kolačići, cookies, web tehnologije, privatnost',
     path: '/cookies',
   },
+  sosDonation: {
+    title: 'snovi.fm donira - SOS Dječije selo',
+    description: 'Uz svaku kupovinu godišnje pretplate za snovi.fm aplikaciju, snovi.fm donira 20% SOS Dječijim selima.',
+    keywords: 'snovi.fm donacija, SOS Dječije selo, godišnja pretplata, djeca, porodica',
+    path: SOS_DONATION_PATH,
+  },
 };
 
 function normalizePath(pathname: string) {
@@ -136,12 +147,20 @@ function getPageFromPath(pathname = window.location.pathname): Page {
     return 'cookies';
   }
 
+  if (path === SOS_DONATION_PATH) {
+    return 'sosDonation';
+  }
+
   return 'app';
 }
 
 function getPathForPage(page: Page) {
   if (page === 'app') {
     return '/';
+  }
+
+  if (page === 'sosDonation') {
+    return SOS_DONATION_PATH;
   }
 
   return `/${page}`;
@@ -324,12 +343,234 @@ function WaitlistPanel({
   );
 }
 
+function formatBam(value: number) {
+  return `${value.toFixed(2)} BAM`;
+}
+
+function SosDonationPage({
+  onNavigate,
+}: {
+  onNavigate: (page: Page) => void;
+}) {
+  const subscriptionPrice = 50;
+  const [showExtraDonation, setShowExtraDonation] = useState(false);
+  const [extraDonationInput, setExtraDonationInput] = useState('');
+  const extraDonation = Math.max(0, Number(extraDonationInput) || 0);
+  const snoviDonation = subscriptionPrice * 0.2;
+  const sosTotal = snoviDonation + extraDonation;
+  const totalDue = subscriptionPrice + extraDonation;
+
+  return (
+    <div className="min-h-screen bg-[#f7f9fc] font-sans text-slate-950 selection:bg-blue-500/20">
+      <nav className="sticky top-0 z-[100] border-b border-slate-200/80 bg-white/95 px-4 shadow-sm md:px-6">
+        <div className="mx-auto flex h-20 max-w-7xl items-center justify-between gap-3">
+          <button className="flex min-w-0 items-center" type="button" onClick={() => onNavigate('app')} aria-label="snovi.fm">
+            <BrandLogo className="h-16 w-auto max-w-[190px] sm:h-20 sm:max-w-[320px]" loading="eager" />
+          </button>
+
+          <div className="flex shrink-0 items-center gap-2 sm:gap-4">
+            <a
+              href={SOS_DONATION_PATH}
+              className="hidden items-center gap-2 rounded-full bg-blue-50 px-4 py-2 text-[10px] font-black uppercase tracking-[0.16em] text-blue-700 ring-1 ring-blue-100 sm:inline-flex"
+              onClick={(event) => event.preventDefault()}
+            >
+              <img src={sosLogoSrc} alt="" className="h-5 w-5 object-contain" loading="eager" />
+              SOS DJEČIJE SELO
+            </a>
+            <button
+              type="button"
+              onClick={() => onNavigate('app')}
+              className="inline-flex h-11 items-center justify-center rounded-full bg-slate-950 px-4 text-[10px] font-black uppercase tracking-[0.16em] text-white transition hover:bg-blue-700 sm:px-5"
+            >
+              Nazad
+            </button>
+          </div>
+        </div>
+      </nav>
+
+      <main>
+        <section className="grid min-h-[calc(100vh-5rem)] lg:grid-cols-[minmax(0,1fr)_minmax(440px,0.86fr)]">
+          <div className="relative isolate flex min-h-[620px] overflow-hidden bg-[#062c5f] px-6 py-12 text-white sm:px-10 lg:min-h-0 lg:px-14 lg:py-16">
+            <img
+              src={sosBackgroundSrc}
+              alt=""
+              className="absolute inset-0 h-full w-full object-cover"
+              loading="eager"
+              decoding="async"
+              referrerPolicy="no-referrer"
+            />
+            <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(3,24,54,0.92),rgba(3,24,54,0.62)),linear-gradient(180deg,rgba(3,24,54,0.18),rgba(1,10,24,0.84))]" />
+            <div className="absolute inset-x-0 bottom-0 h-44 bg-gradient-to-t from-[#031836] to-transparent" />
+
+            <div className="relative z-10 flex w-full flex-col justify-between">
+              <div>
+                <div className="mb-8 inline-flex items-center gap-3 rounded-full border border-white/20 bg-white/12 px-4 py-2">
+                  <img src={sosLogoSrc} alt="SOS Children's Villages" className="h-8 w-8 rounded-full bg-white object-contain p-1" loading="eager" />
+                  <span className="text-[10px] font-black uppercase tracking-[0.22em] text-blue-100">snovi.fm za SOS Dječije selo</span>
+                </div>
+
+                <h1 className="max-w-3xl font-serif text-5xl font-bold leading-[0.92] tracking-tight sm:text-6xl xl:text-7xl">
+                  snovi.fm doniraju, doniraj i ti
+                </h1>
+                <p className="mt-7 max-w-2xl text-xl font-medium leading-8 text-blue-50/90">
+                  Uz svaku kupovinu godišnje pretplate za snovi.fm aplikaciju, snovi.fm donira 20% SOS Dječijim selima.
+                </p>
+              </div>
+
+              <div className="mt-14 grid gap-4 sm:grid-cols-3">
+                {[
+                  { value: '50 BAM', label: 'godišnja pretplata' },
+                  { value: '20%', label: 'donira snovi.fm' },
+                  { value: '10 BAM', label: 'ide za SOS odmah' },
+                ].map((item) => (
+                  <div key={item.label} className="rounded-2xl border border-white/16 bg-white/10 p-5 shadow-2xl shadow-black/20">
+                    <p className="text-3xl font-black tracking-tight text-white">{item.value}</p>
+                    <p className="mt-2 text-[10px] font-black uppercase tracking-[0.2em] text-blue-100/80">{item.label}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white px-4 py-8 text-slate-950 sm:px-8 lg:px-12 lg:py-12">
+            <div className="mx-auto max-w-xl">
+              <div className="mb-8 flex items-center justify-between gap-4">
+                <div>
+                  <p className="text-sm font-semibold text-slate-500">Pay snovi.fm</p>
+                  <h2 className="mt-2 text-4xl font-semibold tracking-tight">{formatBam(totalDue)}</h2>
+                </div>
+                <img src={sosLogoSrc} alt="SOS Dječije selo" className="h-14 w-14 rounded-2xl border border-slate-200 bg-white object-contain p-2" loading="eager" />
+              </div>
+
+              <div className="mb-8 space-y-5">
+                <div className="flex items-center gap-4">
+                  <div className="h-14 w-14 shrink-0 overflow-hidden rounded-xl bg-blue-50">
+                    <img src={brandLogoSrc} alt="" className="h-full w-full object-contain p-2" loading="lazy" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="font-semibold leading-snug">Godišnja pretplata za snovi.fm aplikaciju</p>
+                    <p className="mt-1 text-sm text-slate-500">Qty 1</p>
+                  </div>
+                  <p className="font-semibold">{formatBam(subscriptionPrice)}</p>
+                </div>
+
+                <div className="rounded-2xl bg-blue-50 p-4 ring-1 ring-blue-100">
+                  <div className="flex items-center justify-between gap-4">
+                    <div>
+                      <p className="text-sm font-semibold text-blue-950">Donacija koju pokriva snovi.fm</p>
+                      <p className="mt-1 text-xs text-blue-700">20% od godišnje pretplate ide SOS Dječijim selima.</p>
+                    </div>
+                    <p className="font-black text-blue-700">{formatBam(snoviDonation)}</p>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setShowExtraDonation(true)}
+                  className="flex w-full items-center justify-between rounded-2xl border border-dashed border-blue-300 bg-white px-4 py-4 text-left transition hover:border-blue-500 hover:bg-blue-50"
+                >
+                  <span>
+                    <span className="block text-sm font-black uppercase tracking-[0.14em] text-blue-700">Želite još donirati?</span>
+                    <span className="mt-1 block text-sm text-slate-500">Dodajte iznos po želji uz pretplatu.</span>
+                  </span>
+                  <Plus className="h-5 w-5 text-blue-700" />
+                </button>
+
+                {showExtraDonation ? (
+                  <label className="block">
+                    <span className="mb-2 block text-sm font-semibold text-slate-700">Dodatna donacija za SOS Dječije selo</span>
+                    <div className="flex overflow-hidden rounded-xl border border-slate-300 bg-white focus-within:border-blue-500 focus-within:ring-4 focus-within:ring-blue-100">
+                      <input
+                        type="number"
+                        min="0"
+                        step="1"
+                        inputMode="decimal"
+                        value={extraDonationInput}
+                        onChange={(event) => setExtraDonationInput(event.target.value)}
+                        placeholder="0"
+                        className="min-w-0 flex-1 px-4 py-3 text-base outline-none"
+                      />
+                      <span className="flex items-center bg-slate-50 px-4 text-sm font-bold text-slate-500">BAM</span>
+                    </div>
+                  </label>
+                ) : null}
+
+                <div className="space-y-3 border-t border-slate-200 pt-5 text-sm">
+                  <div className="flex justify-between text-slate-600"><span>Subtotal</span><span>{formatBam(subscriptionPrice)}</span></div>
+                  <div className="flex justify-between text-slate-600"><span>Dodatna donacija</span><span>{formatBam(extraDonation)}</span></div>
+                  <div className="flex justify-between text-blue-700"><span>Ukupno za SOS</span><span>{formatBam(sosTotal)}</span></div>
+                  <div className="flex justify-between border-t border-slate-200 pt-4 text-base font-bold"><span>Total due</span><span>{formatBam(totalDue)}</span></div>
+                </div>
+              </div>
+
+              <form className="space-y-5" onSubmit={(event) => event.preventDefault()}>
+                <div className="flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-slate-50 py-3 text-sm font-semibold text-slate-700">
+                  <CreditCard className="h-4 w-4" />
+                  Plaćanje karticom
+                </div>
+
+                <label className="block">
+                  <span className="mb-2 block text-sm font-semibold text-slate-700">Email</span>
+                  <input type="email" className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100" />
+                </label>
+
+                <div>
+                  <p className="mb-2 text-sm font-semibold text-slate-700">Card information</p>
+                  <div className="overflow-hidden rounded-xl border border-slate-300 bg-white focus-within:border-blue-500 focus-within:ring-4 focus-within:ring-blue-100">
+                    <input aria-label="Card number" placeholder="1234 1234 1234 1234" className="w-full border-b border-slate-200 px-4 py-3 outline-none" />
+                    <div className="grid grid-cols-2">
+                      <input aria-label="Expiration" placeholder="MM / YY" className="border-r border-slate-200 px-4 py-3 outline-none" />
+                      <input aria-label="CVC" placeholder="CVC" className="px-4 py-3 outline-none" />
+                    </div>
+                  </div>
+                </div>
+
+                <label className="block">
+                  <span className="mb-2 block text-sm font-semibold text-slate-700">Name on card</span>
+                  <input className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100" />
+                </label>
+
+                <button className="flex h-14 w-full items-center justify-center rounded-xl bg-blue-700 text-sm font-black uppercase tracking-[0.14em] text-white shadow-lg shadow-blue-700/20 transition hover:bg-blue-800">
+                  Plati {formatBam(totalDue)}
+                </button>
+              </form>
+            </div>
+          </div>
+        </section>
+
+        <section className="bg-[#062c5f] px-6 py-20 text-white md:py-28">
+          <div className="mx-auto grid max-w-7xl gap-12 lg:grid-cols-[0.85fr_1.15fr] lg:items-center">
+            <div>
+              <img src={sosLogoSrc} alt="SOS Dječije selo" className="mb-8 h-16 w-16 rounded-2xl bg-white object-contain p-3" loading="lazy" />
+              <p className="mb-5 text-[11px] font-black uppercase tracking-[0.36em] text-blue-200">priča iza donacije</p>
+              <h2 className="font-serif text-5xl font-bold leading-[0.95] md:text-7xl">Miran san je lakši kad dijete ima siguran dom.</h2>
+            </div>
+            <div className="grid gap-5 sm:grid-cols-2">
+              {[
+                'Kupovinom godišnje pretplate podržavate aplikaciju za mirnije porodične večeri.',
+                'snovi.fm od svake kupovine izdvaja 20% za SOS Dječija sela.',
+                'Dodatni iznos koji unesete ulazi direktno u ukupan SOS iznos ove kupovine.',
+                'Cilj je jednostavan: više priča za djecu, više podrške za djecu kojoj je dom najvažnija priča.',
+              ].map((item) => (
+                <div key={item} className="rounded-2xl border border-white/12 bg-white/8 p-6">
+                  <Heart className="mb-5 h-6 w-6 text-emerald-300" />
+                  <p className="text-lg font-medium leading-7 text-blue-50">{item}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+  );
+}
+
 function LegalPage({
   page,
   lang,
   onNavigate,
 }: {
-  page: Exclude<Page, 'app'>;
+  page: Exclude<Page, 'app' | 'sosDonation'>;
   lang: Language;
   onNavigate: (page: Page) => void;
 }) {
@@ -733,6 +974,10 @@ export default function App() {
   const headerStorePlatforms: StorePlatform[] = headerStorePlatform ? [headerStorePlatform] : ['ios', 'android'];
   const useShortHeaderStoreLabels = headerStorePlatforms.length > 1;
 
+  if (page === 'sosDonation') {
+    return <SosDonationPage onNavigate={navigateToPage} />;
+  }
+
   if (page !== 'app') {
     return <LegalPage page={page} lang={lang} onNavigate={navigateToPage} />;
   }
@@ -751,9 +996,32 @@ export default function App() {
           <a href="#psychology" className="hover:text-white transition-colors">{t.nav.psychology}</a>
           <a href="#effects" className="hover:text-white transition-colors">{t.nav.effects}</a>
           <a href="#waitlist" className="hover:text-white transition-colors">{t.nav.waitlist}</a>
+          <a
+            href={SOS_DONATION_PATH}
+            onClick={(event) => {
+              event.preventDefault();
+              navigateToPage('sosDonation');
+            }}
+            className="inline-flex items-center gap-2 text-blue-400 transition-colors hover:text-blue-300"
+          >
+            <img src={sosLogoSrc} alt="" className="h-5 w-5 rounded-full bg-white object-contain p-0.5" loading="eager" />
+            SOS DJEČIJE SELO
+          </a>
         </div>
 
         <div className="flex shrink-0 items-center gap-2 sm:gap-3">
+          <a
+            href={SOS_DONATION_PATH}
+            onClick={(event) => {
+              event.preventDefault();
+              navigateToPage('sosDonation');
+            }}
+            className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-blue-500/15 text-blue-300 ring-1 ring-blue-400/20 transition hover:bg-blue-500/25 sm:h-11 sm:w-auto sm:gap-2 sm:px-3"
+            aria-label="SOS Dječije selo"
+          >
+            <img src={sosLogoSrc} alt="" className="h-5 w-5 rounded-full bg-white object-contain p-0.5" loading="eager" />
+            <span className="hidden text-[10px] font-black uppercase tracking-[0.12em] text-blue-300 sm:inline">SOS</span>
+          </a>
           <button 
             onClick={toggleLang}
             className="hidden items-center gap-2 rounded-full px-4 py-2 text-[11px] font-black tracking-widest transition-all hover:bg-white/10"
@@ -1398,6 +1666,19 @@ export default function App() {
               <ul className="space-y-4 text-slate-500 font-bold text-sm">
                 <li><a href="#psychology" className="hover:text-violet-500 transition-colors">{t.nav.psychology}</a></li>
                 <li><a href="#effects" className="hover:text-violet-500 transition-colors">{t.nav.effects}</a></li>
+                <li>
+                  <a
+                    href={SOS_DONATION_PATH}
+                    onClick={(event) => {
+                      event.preventDefault();
+                      navigateToPage('sosDonation');
+                    }}
+                    className="inline-flex items-center gap-2 text-blue-400 transition-colors hover:text-blue-300"
+                  >
+                    <img src={sosLogoSrc} alt="" className="h-5 w-5 rounded-full bg-white object-contain p-0.5" loading="lazy" />
+                    SOS Dječije selo
+                  </a>
+                </li>
               </ul>
             </div>
             <div>
