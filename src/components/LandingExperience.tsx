@@ -97,7 +97,8 @@ type FixedMiniPlayerBarProps = {
   experience: LandingExperienceState;
 };
 
-const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1501785888041-af3ef285b470?auto=format&fit=crop&q=80&w=1200';
+const PUBLIC_BASE_URL = import.meta.env.BASE_URL;
+const FALLBACK_IMAGE = `${PUBLIC_BASE_URL}img/snovi34.jpg`;
 const ALL_MAIN_TAB_ID = 'LIBRARY_ALL';
 const ALL_SUB_TAB_ID = 'ALL';
 const DEFAULT_MUSIC_LEVEL = 2;
@@ -400,7 +401,7 @@ const STATIC_STORIES: Story[] = prioritizeStories([
     title: 'Cvrčak i mrav',
     narrator: 'snovi.fm',
     duration: '08:30',
-    image: 'https://images.unsplash.com/photo-1501785888041-af3ef285b470?auto=format&fit=crop&q=80&w=1200',
+    image: `${PUBLIC_BASE_URL}img/snovi34.jpg`,
     category_id: 1,
     category_label: 'Priče',
     subcategory_id: 1,
@@ -414,7 +415,7 @@ const STATIC_STORIES: Story[] = prioritizeStories([
     title: 'Noćna šuma',
     narrator: 'snovi.fm',
     duration: '06:10',
-    image: 'https://images.unsplash.com/photo-1448375240586-882707db888b?auto=format&fit=crop&q=80&w=1200',
+    image: `${PUBLIC_BASE_URL}img/snovi2.jpg`,
     category_id: 2,
     category_label: 'Ambijenti',
     locked: false,
@@ -1117,7 +1118,7 @@ function DeviceMiniPlayer({
   const controlsDisabled = !story?.sound;
 
   return (
-    <div className="relative overflow-hidden border-t border-white/5 bg-[#071728]/95 backdrop-blur-xl">
+    <div className="relative overflow-hidden border-t border-white/5 bg-[#071728]/95">
       <div className="flex min-h-[72px] items-center justify-between gap-3 px-4 py-3">
         <div className="flex min-w-0 flex-1 items-center gap-3">
           <div className="h-11 w-11 shrink-0 overflow-hidden rounded-xl bg-[#111827]">
@@ -1622,11 +1623,11 @@ function DeviceHomePreview({
 export function HeroDeviceShowcase({ lang, experience }: HeroDeviceShowcaseProps) {
   return (
     <div className="relative z-10 flex flex-col items-center justify-center gap-20 md:flex-row md:gap-0">
-      <div className="relative z-20 h-[540px] w-[272px] -translate-x-[22%] overflow-hidden rounded-[3rem] border-[8px] border-[#1a1a1a] bg-[#0a0a0a] shadow-[0_80px_150px_-30px_rgba(0,0,0,0.8)] md:h-[580px] md:w-[280px] md:-translate-x-[40px] md:rotate-[-5deg] md:border-[10px]">
+      <div className="relative z-20 h-[540px] w-[272px] overflow-hidden rounded-[3rem] border-[8px] border-[#1a1a1a] bg-[#0a0a0a] shadow-[0_80px_150px_-30px_rgba(0,0,0,0.8)] md:h-[580px] md:w-[280px] md:-translate-x-[40px] md:rotate-[-5deg] md:border-[10px]">
         <DeviceHomePreview lang={lang} experience={experience} />
       </div>
 
-      <div className="relative z-10 aspect-[4/3] w-[320px] translate-x-[12%] overflow-hidden rounded-[2.5rem] border-[12px] border-[#1a1a1a] bg-[#0a0a0a] shadow-[0_80px_150px_-30px_rgba(0,0,0,0.8)] md:w-full md:max-w-[550px] md:translate-x-[40px] md:-translate-y-10 md:rotate-[3deg] md:rounded-[3rem] md:border-[14px]">
+      <div className="relative z-10 hidden aspect-[4/3] w-[320px] overflow-hidden rounded-[2.5rem] border-[12px] border-[#1a1a1a] bg-[#0a0a0a] shadow-[0_80px_150px_-30px_rgba(0,0,0,0.8)] md:block md:w-full md:max-w-[550px] md:translate-x-[40px] md:-translate-y-10 md:rotate-[3deg] md:rounded-[3rem] md:border-[14px]">
         <DeviceLibraryPreview lang={lang} experience={experience} />
       </div>
     </div>
@@ -1643,7 +1644,7 @@ export function FixedMiniPlayerBar({ lang, experience }: FixedMiniPlayerBarProps
 
   return (
     <div className="pointer-events-none fixed inset-x-0 bottom-0 z-[140] md:px-6 md:pb-5">
-      <div className="pointer-events-auto overflow-hidden border-t border-white/8 bg-[rgba(11,27,45,0.96)] shadow-none backdrop-blur-2xl md:mx-auto md:max-w-5xl md:rounded-[1.75rem] md:border md:shadow-[0_25px_80px_-20px_rgba(0,0,0,0.85)]">
+      <div className="pointer-events-auto overflow-hidden border-t border-white/8 bg-[rgba(11,27,45,0.96)] shadow-none md:mx-auto md:max-w-5xl md:rounded-[1.75rem] md:border md:shadow-[0_25px_80px_-20px_rgba(0,0,0,0.85)]">
         <div
           className="flex min-h-[76px] items-center justify-between gap-3 px-3 py-3 sm:px-4 md:min-h-[84px] md:px-5"
           style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 0.75rem)' }}
@@ -1767,7 +1768,7 @@ export function LandingLibrarySection({
           <motion.div
             animate={{ y: [0, -15, 0] }}
             transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
-            className="absolute -top-10 right-0 hidden items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.02] px-6 py-3 shadow-3xl backdrop-blur-2xl md:flex"
+            className="absolute -top-10 right-0 hidden items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.02] px-6 py-3 shadow-3xl md:flex"
           >
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500/20">
               <Heart className="h-5 w-5 text-emerald-400" />

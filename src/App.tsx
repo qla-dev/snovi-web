@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { motion } from 'motion/react';
+import { motion, MotionConfig } from 'motion/react';
 import { 
   Play, 
   Pause, 
@@ -186,9 +186,6 @@ function WaitlistPanel({
 }) {
   return (
     <div className={`glass relative overflow-hidden rounded-[3rem] border border-white/10 p-8 text-center shadow-4xl md:rounded-[4rem] md:p-20 ${className}`}>
-      <div className="absolute right-0 top-0 h-64 w-64 translate-x-1/2 -translate-y-1/2 rounded-full bg-violet-500/10 blur-[100px]" />
-      <div className="absolute bottom-0 left-0 h-64 w-64 -translate-x-1/2 translate-y-1/2 rounded-full bg-indigo-500/10 blur-[100px]" />
-
       <div className="relative z-10">
         <motion.div
           animate={{ rotate: [0, 10, 0] }}
@@ -363,12 +360,12 @@ export default function App() {
 
     return !window.matchMedia('(max-width: 767px)').matches;
   });
-  const [renderDeferredSections, setRenderDeferredSections] = useState(() => {
+  const [reducePageMotion, setReducePageMotion] = useState(() => {
     if (typeof window === 'undefined') {
       return false;
     }
 
-    return !window.matchMedia('(max-width: 767px)').matches;
+    return window.matchMedia('(max-width: 767px)').matches;
   });
   const t = translations[lang];
   const landingExperience = useLandingExperience();
@@ -429,67 +426,17 @@ export default function App() {
 
   useEffect(() => {
     const mediaQuery = window.matchMedia('(max-width: 767px)');
-    const syncHeroParticles = () => setShowHeroParticles(!mediaQuery.matches);
+    const syncMobileSettings = () => {
+      const isMobile = mediaQuery.matches;
+      setShowHeroParticles(!isMobile);
+      setReducePageMotion(isMobile);
+    };
 
-    syncHeroParticles();
-    mediaQuery.addEventListener('change', syncHeroParticles);
+    syncMobileSettings();
+    mediaQuery.addEventListener('change', syncMobileSettings);
 
     return () => {
-      mediaQuery.removeEventListener('change', syncHeroParticles);
-    };
-  }, []);
-
-  useEffect(() => {
-    if (!window.matchMedia('(max-width: 767px)').matches) {
-      setRenderDeferredSections(true);
-      window.__SNOVI_BOOT_MARK__?.('Deferred sections ready', 'desktop renders full page immediately');
-      return;
-    }
-
-    let didRender = false;
-    let frameId = 0;
-    window.__SNOVI_BOOT_MARK__?.('Mobile first paint mode', 'hero and waitlist only');
-
-    const renderRest = (reason: string) => {
-      if (didRender) {
-        return;
-      }
-
-      didRender = true;
-      setRenderDeferredSections(true);
-      window.__SNOVI_BOOT_MARK__?.('Deferred sections ready', reason);
-    };
-
-    const checkScroll = () => {
-      frameId = 0;
-      if (window.scrollY > window.innerHeight * 0.72) {
-        renderRest('mobile user scrolled past first sections');
-      }
-    };
-
-    const queueScrollCheck = () => {
-      if (frameId) {
-        return;
-      }
-
-      frameId = window.requestAnimationFrame(checkScroll);
-    };
-
-    const fallbackId = window.setTimeout(() => {
-      renderRest('mobile fallback after first paint settled');
-    }, 8000);
-
-    window.addEventListener('scroll', queueScrollCheck, { passive: true });
-    window.addEventListener('touchstart', queueScrollCheck, { passive: true });
-
-    return () => {
-      window.clearTimeout(fallbackId);
-      window.removeEventListener('scroll', queueScrollCheck);
-      window.removeEventListener('touchstart', queueScrollCheck);
-
-      if (frameId) {
-        window.cancelAnimationFrame(frameId);
-      }
+      mediaQuery.removeEventListener('change', syncMobileSettings);
     };
   }, []);
 
@@ -526,7 +473,7 @@ export default function App() {
   }, [landingExperience.closeWaitlistModal, landingExperience.isWaitlistModalOpen]);
 
   useEffect(() => {
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    if (window.matchMedia('(prefers-reduced-motion: reduce), (max-width: 767px)').matches) {
       return;
     }
 
@@ -591,9 +538,10 @@ export default function App() {
   }
 
   return (
+    <MotionConfig reducedMotion={reducePageMotion ? 'always' : 'user'}>
     <div className="min-h-screen bg-[#050505] pb-28 font-sans text-white selection:bg-violet-500/30 md:pb-36">
       {/* Navigation */}
-      <nav className={`fixed inset-x-0 top-0 z-[100] flex items-center justify-between px-6 transition-[background-color,border-color,backdrop-filter] duration-500 ${scrolled ? 'glass border-b border-white/5' : 'bg-transparent'}`}>
+      <nav className={`fixed inset-x-0 top-0 z-[100] flex items-center justify-between px-6 transition-colors duration-500 ${scrolled ? 'glass border-b border-white/5' : 'bg-transparent'}`}>
         <div className="flex items-center">
           <BrandLogo className="h-20 w-auto max-w-[320px] md:h-24 md:max-w-[380px]" loading="eager" />
         </div>
@@ -629,10 +577,6 @@ export default function App() {
           <div className="absolute inset-x-0 top-0 z-0 w-full aspect-[1080/1920] overflow-hidden md:inset-0 md:h-full md:aspect-auto">
             <HeroLottieBackground className="hero-lottie-bg absolute inset-0 z-0 opacity-90" />
             <div className="absolute inset-0 z-[1] bg-gradient-to-b from-[#041221] via-[#050505]/45 to-transparent md:to-[#050505]" />
-            <div className="absolute left-[-10%] top-[-20%] z-[2] h-[70%] w-[70%] rounded-full bg-violet-600/10 blur-[180px]" />
-            <div className="absolute bottom-[-20%] right-[-10%] z-[2] h-[70%] w-[70%] rounded-full bg-indigo-600/10 blur-[180px]" />
-            <div className="absolute left-1/2 top-1/2 z-[3] h-full w-full -translate-x-1/2 -translate-y-1/2 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-20 pointer-events-none" />
-            
             {/* Subtle Night Sky Sparkles */}
             {showHeroParticles && (
               <div className="absolute inset-0 z-[4] overflow-hidden pointer-events-none">
@@ -744,7 +688,7 @@ export default function App() {
             <HeroDeviceShowcase lang={lang} experience={landingExperience} />
             
             {/* Floating Badges - Repositioned and Responsive */}
-            <div className="absolute inset-0 pointer-events-none z-30">
+            <div className="absolute inset-0 pointer-events-none z-30 hidden md:block">
               {/* Brain Badge */}
               <AnimatedWidgetShell className="absolute top-[150px] right-4 left-auto z-40 md:top-0 md:left-[5%] md:right-auto md:translate-x-0">
                 <motion.div 
@@ -828,7 +772,7 @@ export default function App() {
                 <div className="flex items-center gap-3 lg:gap-4 mb-3 lg:mb-4">
                   <div className="w-12 h-12 lg:w-16 lg:h-16 rounded-xl lg:rounded-2xl overflow-hidden shadow-lg">
                     <img
-                      src={landingExperience.selectedStory?.image || 'https://picsum.photos/seed/duckling/200/200'}
+                      src={landingExperience.selectedStory?.image || brandLogoSrc}
                       alt="Now Playing"
                       className="w-full h-full object-cover"
                       referrerPolicy="no-referrer"
@@ -907,7 +851,6 @@ export default function App() {
         </div>
       </section>
 
-      {renderDeferredSections ? (
       <>
       <div className="max-w-7xl mx-auto h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
 
@@ -1121,12 +1064,6 @@ export default function App() {
 
             <div className="relative">
               {/* Floating Sound Waves in Effects */}
-              <motion.div 
-                animate={{ scale: [1, 1.1, 1] }}
-                transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-                className="absolute -top-10 -right-10 w-32 h-32 bg-violet-500/10 blur-3xl rounded-full z-0"
-              />
-              
               {/* New Floating Element: Spatial Audio */}
               <AnimatedWidgetShell className="absolute -top-20 left-1/2 z-50 -translate-x-1/2" strength={0.85}>
               <motion.div 
@@ -1279,7 +1216,7 @@ export default function App() {
                 href="https://qla.dev"
                 target="_blank"
                 rel="noreferrer"
-                className="group block overflow-hidden rounded-[2rem] border border-white/10 bg-white/[0.03] p-5 text-white shadow-[0_20px_60px_-30px_rgba(0,0,0,0.45)] backdrop-blur-2xl transition-transform duration-300 hover:-translate-y-1 hover:border-violet-500/30 hover:bg-white/[0.05]"
+                className="group block overflow-hidden rounded-[2rem] border border-white/10 bg-white/[0.03] p-5 text-white shadow-[0_20px_60px_-30px_rgba(0,0,0,0.45)] transition-transform duration-300 hover:-translate-y-1 hover:border-violet-500/30 hover:bg-white/[0.05]"
               >
                 <p className="text-[10px] font-black uppercase tracking-[0.28em] text-slate-500">{t.footer.ecosystem}</p>
                 <div className="mt-4 flex items-center justify-between gap-4">
@@ -1337,13 +1274,12 @@ export default function App() {
         </div>
       </footer>
       </>
-      ) : null}
       {landingExperience.isWaitlistModalOpen ? (
         <div
           className="fixed inset-0 z-[160] flex items-center justify-center p-4 md:p-6"
           onClick={landingExperience.closeWaitlistModal}
         >
-          <div className="absolute inset-0 bg-black/80 backdrop-blur-md" />
+          <div className="absolute inset-0 bg-black/80" />
           <motion.div
             initial={{ opacity: 0, y: 24, scale: 0.96 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -1365,5 +1301,6 @@ export default function App() {
       ) : null}
       <FixedMiniPlayerBar lang={lang} experience={landingExperience} />
     </div>
+    </MotionConfig>
   );
 }
