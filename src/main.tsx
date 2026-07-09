@@ -7,6 +7,7 @@ declare global {
   interface Window {
     __SNOVI_BOOT_MARK__?: (label: string, detail?: string) => void;
     __SNOVI_BOOT_DEBUG__?: boolean;
+    __SNOVI_STOP_BOOT_SCROLL_LOCK__?: () => void;
   }
 }
 

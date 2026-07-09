@@ -88,7 +88,6 @@ type LandingLibrarySectionProps = {
   safeLabel: string;
   viewAllLabel: string;
   popularLabel: string;
-  publishedLabel: string;
   comingSoonLabel: string;
 };
 
@@ -491,7 +490,8 @@ export function useLandingExperience() {
     }
 
     const nextAudio = new Audio();
-    nextAudio.preload = 'none';
+    nextAudio.autoplay = true;
+    nextAudio.preload = 'auto';
     setAudioElement(nextAudio);
     window.__SNOVI_BOOT_MARK__?.('Primary audio created', 'user requested playback');
     return nextAudio;
@@ -1375,7 +1375,6 @@ function StoryTile({
   onSelect,
   onTogglePlay,
   popularLabel,
-  publishedLabel,
   comingSoonLabel,
   compact = false,
 }: {
@@ -1386,7 +1385,6 @@ function StoryTile({
   onSelect: (story: Story) => void;
   onTogglePlay: (story: Story) => void;
   popularLabel: string;
-  publishedLabel: string;
   comingSoonLabel: string;
   compact?: boolean;
 }) {
@@ -1419,7 +1417,8 @@ function StoryTile({
           loading="lazy"
           decoding="async"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/15 to-transparent" />
+        <div className="absolute inset-0 bg-black/45" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/45 via-transparent to-black/20" />
 
         <div className="absolute left-4 top-4 flex items-center gap-2">
           {story.favorite ? (
@@ -1435,31 +1434,30 @@ function StoryTile({
           ) : null}
         </div>
 
-        <div className="absolute right-4 top-4">
-          <span
-            className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] ${
-              story.locked ? 'bg-amber-400 text-black' : 'border border-white/10 bg-black/45 text-white'
+        {story.locked ? (
+          <div className="absolute right-4 top-4">
+            <span className="inline-flex items-center gap-1 rounded-full bg-amber-400 px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-black">
+              <Lock className="h-3 w-3" />
+              {comingSoonLabel}
+            </span>
+          </div>
+        ) : null}
+
+        <div className="absolute inset-0 flex items-center justify-center px-4 text-center">
+          <p
+            className={`font-serif font-bold text-white ${
+              compact ? 'text-2xl leading-7 md:text-4xl md:leading-9' : 'text-3xl leading-8 md:text-4xl md:leading-9'
             }`}
           >
-            {story.locked ? <Lock className="h-3 w-3" /> : null}
-            {story.locked ? comingSoonLabel : publishedLabel}
-          </span>
+            {story.title}
+          </p>
         </div>
 
         <div className="absolute inset-x-0 bottom-0 p-4">
           <div className="flex items-end justify-between gap-3">
-            <div className="min-w-0">
-              <p
-                className={`font-serif font-bold text-white ${
-                  compact ? 'text-base leading-5 md:text-2xl md:leading-7' : 'text-lg leading-5 md:text-2xl md:leading-7'
-                }`}
-              >
-                {story.title}
-              </p>
-              <p className="mt-2 text-[9px] font-black uppercase tracking-[0.18em] text-slate-300 md:text-[11px]">
-                {story.duration} - {story.narrator}
-              </p>
-            </div>
+            <p className="text-[9px] font-black uppercase tracking-[0.18em] text-slate-300 md:text-[11px]">
+              {story.duration}
+            </p>
             <button
               type="button"
               onClick={(event) => {
@@ -1905,7 +1903,6 @@ export function LandingLibrarySection({
   safeLabel,
   viewAllLabel,
   popularLabel,
-  publishedLabel,
   comingSoonLabel,
 }: LandingLibrarySectionProps) {
   const copy = useUiCopy(lang);
@@ -2047,7 +2044,6 @@ export function LandingLibrarySection({
                     onSelect={experience.selectStory}
                     onTogglePlay={experience.toggleStoryPlayback}
                     popularLabel={story.favorite ? copy.favorites : popularLabel}
-                    publishedLabel={publishedLabel}
                     comingSoonLabel={comingSoonLabel}
                     compact
                   />

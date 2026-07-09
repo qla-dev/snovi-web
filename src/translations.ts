@@ -76,7 +76,7 @@ export const translations = {
       }
     },
     dedication: {
-      title: 'Dizajnirano za roditelje. Voljeno od djece.',
+      title: 'Zvučni melatonin za čitavu obitelj!',
       description: 'Vratite mir u svoj dom. snovi.fm preuzima teret uspavljivanja, ostavljajući vam prostor za čistu bliskost i nježnost.',
       mission: 'Naša Misija',
       feature1: { title: 'Bez ekrana', text: 'Dizajnirano za slušanje, ne gledanje.' },
@@ -240,7 +240,7 @@ export const translations = {
       }
     },
     dedication: {
-      title: 'Designed for Parents. Loved by Children.',
+      title: 'Audible melatonin for the whole family!',
       description: 'Bring peace back to your home. snovi.fm takes the burden of putting children to sleep, leaving you space for pure closeness and tenderness.',
       mission: 'Our Mission',
       feature1: { title: 'Screen-free', text: 'Designed for listening, not watching.' },

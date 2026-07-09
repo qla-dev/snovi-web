@@ -581,25 +581,48 @@ export default function App() {
 
   useEffect(() => {
     window.__SNOVI_BOOT_MARK__?.('App mounted', 'hero should render now');
+    window.__SNOVI_STOP_BOOT_SCROLL_LOCK__?.();
   }, []);
 
   useEffect(() => {
-    if (page !== 'app' || window.location.hash || !window.matchMedia('(max-width: 767px)').matches) {
+    if (page !== 'app') {
       return;
     }
 
     const previousScrollRestoration = window.history.scrollRestoration;
     window.history.scrollRestoration = 'manual';
 
-    const scrollToTop = () => window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
-    scrollToTop();
+    let frameId = 0;
+    let timeoutId = 0;
+    const startedAt = window.performance.now();
+    const forceDurationMs = window.matchMedia('(max-width: 767px)').matches ? 1800 : 700;
 
-    const frameId = window.requestAnimationFrame(scrollToTop);
-    const timeoutId = window.setTimeout(scrollToTop, 250);
+    const scrollToTop = () => {
+      window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+      document.documentElement.scrollTop = 0;
+      document.body.scrollTop = 0;
+    };
+
+    const forceScrollToTop = () => {
+      scrollToTop();
+
+      if (window.performance.now() - startedAt < forceDurationMs) {
+        frameId = window.requestAnimationFrame(forceScrollToTop);
+      }
+    };
+
+    forceScrollToTop();
+    timeoutId = window.setTimeout(scrollToTop, forceDurationMs + 250);
 
     return () => {
-      window.cancelAnimationFrame(frameId);
-      window.clearTimeout(timeoutId);
+      if (frameId) {
+        window.cancelAnimationFrame(frameId);
+      }
+
+      if (timeoutId) {
+        window.clearTimeout(timeoutId);
+      }
+
       window.history.scrollRestoration = previousScrollRestoration;
     };
   }, [page]);
@@ -1258,7 +1281,7 @@ export default function App() {
       <div className="max-w-7xl mx-auto h-px bg-gradient-to-r from-transparent via-white/20 to-transparent mb-20" />
 
       {/* Dedication Section - Luxury Split with Parents Image */}
-      <section className="py-20 px-6 bg-white text-black rounded-[5rem] mx-4 mb-4 relative overflow-hidden md:py-40">
+      <section className="px-6 pb-6 pt-20 bg-white text-black rounded-[5rem] mx-4 mb-4 relative overflow-hidden md:py-40">
         <div className="max-w-7xl mx-auto grid lg:grid-cols-2 gap-32 items-center">
           <motion.div
             initial={{ opacity: 0, x: -30 }}
@@ -1305,7 +1328,7 @@ export default function App() {
               <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
             </div>
             
-            <AnimatedWidgetShell className="absolute -bottom-10 -right-10 z-50" strength={0.9}>
+            <AnimatedWidgetShell className="absolute -bottom-10 -right-10 z-50 hidden md:block" strength={0.9}>
             <div className="glass p-10 rounded-[3rem] border-white/20 shadow-4xl max-w-[280px] rotate-[5deg]">
               <div className="flex gap-2 mb-4">
                 {[1, 2, 3, 4, 5].map(i => <Star key={i} className="w-5 h-5 fill-amber-400 text-amber-400" />)}
@@ -1347,21 +1370,20 @@ export default function App() {
         safeLabel={t.stories.safeForKids}
         viewAllLabel={t.stories.viewAll}
         popularLabel={t.stories.popular}
-        publishedLabel={t.stories.published}
         comingSoonLabel={t.stories.comingSoon}
       />
 
       <div className="max-w-7xl mx-auto h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
 
       {/* Footer */}
-      <footer className="py-32 px-6">
+      <footer className="px-6 pb-8 pt-16 md:pt-32 md:pb-10">
         <div className="max-w-7xl mx-auto">
           <div className="grid md:grid-cols-5 gap-16 mb-24">
-            <div className="col-span-2">
-              <div className="mb-8">
-                <BrandLogo className="h-14 w-auto max-w-[220px] md:h-16 md:max-w-[260px]" />
+            <div className="col-span-2 flex items-center gap-4 md:block">
+              <div className="shrink-0 md:mb-8">
+                <BrandLogo className="h-12 w-auto max-w-[150px] md:h-16 md:max-w-[260px]" />
               </div>
-              <p className="text-xl text-slate-500 max-w-sm leading-relaxed">
+              <p className="max-w-[170px] text-sm leading-snug text-slate-500 md:max-w-sm md:text-xl md:leading-relaxed">
                 {t.footer.tagline}
               </p>
             </div>
@@ -1386,7 +1408,7 @@ export default function App() {
                 href="https://qla.dev"
                 target="_blank"
                 rel="noreferrer"
-                className="group block overflow-hidden rounded-[2rem] border border-white/10 bg-white/[0.03] p-5 text-white shadow-[0_20px_60px_-30px_rgba(0,0,0,0.45)] transition-transform duration-300 hover:-translate-y-1 hover:border-violet-500/30 hover:bg-white/[0.05]"
+                className="group block text-white"
               >
                 <p className="text-[10px] font-black uppercase tracking-[0.28em] text-slate-500">{t.footer.ecosystem}</p>
                 <div className="mt-4 flex items-center justify-between gap-4">
