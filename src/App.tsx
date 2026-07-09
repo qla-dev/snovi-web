@@ -426,7 +426,7 @@ function SosDonationPage({
   }, []);
 
   return (
-    <div className="min-h-screen bg-[#f7f9fc] pb-44 font-sans text-slate-950 selection:bg-blue-500/20">
+    <div className="min-h-screen bg-[#f7f9fc] pb-24 font-sans text-slate-950 selection:bg-blue-500/20">
       {isOpening ? (
         <div className="fixed inset-0 z-[220] flex items-center justify-center bg-[#050505]/92">
           <LoaderCircle className="h-12 w-12 animate-spin text-violet-400" />
@@ -652,7 +652,7 @@ function SosStorySection({
             {[
               'Kupovinom godišnje pretplate podržavate rad SOS Dječijih sela Bosne i Hercegovine.',
               'snovi.fm od svake kupovine izdvaja 20% (10 BAM) i izdvaja ih za konstantnu i direktnu podršku djeci bez starateljstva.',
-              'Također, ovim putem možete donirati i dodatni iznos koji unesete direktno u poseni odjeljak pri kupovini.',
+              'Također, ovim putem možete donirati i dodatni iznos koji unesete direktno u posebni odjeljak pri kupovini.',
               'Cilj je jednostavan: više podrške za djecu kojoj je dom najvažnija priča.',
             ].map((item) => (
               <div key={item} className="rounded-2xl border border-white/12 bg-white/8 p-6">
@@ -993,37 +993,7 @@ export default function App() {
     const previousScrollRestoration = window.history.scrollRestoration;
     window.history.scrollRestoration = 'manual';
 
-    let frameId = 0;
-    let timeoutId = 0;
-    const startedAt = window.performance.now();
-    const forceDurationMs = window.matchMedia('(max-width: 767px)').matches ? 1800 : 700;
-
-    const scrollToTop = () => {
-      window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
-      document.documentElement.scrollTop = 0;
-      document.body.scrollTop = 0;
-    };
-
-    const forceScrollToTop = () => {
-      scrollToTop();
-
-      if (window.performance.now() - startedAt < forceDurationMs) {
-        frameId = window.requestAnimationFrame(forceScrollToTop);
-      }
-    };
-
-    forceScrollToTop();
-    timeoutId = window.setTimeout(scrollToTop, forceDurationMs + 250);
-
     return () => {
-      if (frameId) {
-        window.cancelAnimationFrame(frameId);
-      }
-
-      if (timeoutId) {
-        window.clearTimeout(timeoutId);
-      }
-
       window.history.scrollRestoration = previousScrollRestoration;
     };
   }, [page]);
