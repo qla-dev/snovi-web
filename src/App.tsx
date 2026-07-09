@@ -40,15 +40,6 @@ import {
 } from './components/LandingExperience';
 import { HeroLottieBackground } from './components/HeroLottieBackground';
 
-const stories = [
-  { id: 1, title: { bs: 'Ružno pače', en: 'The Ugly Duckling' }, duration: '08:30', status: 'published', image: 'https://picsum.photos/seed/duckling/600/800' },
-  { id: 2, title: { bs: 'Vuk i sedam kozlića', en: 'The Wolf and the Seven Kids' }, duration: '07:50', status: 'published', image: 'https://picsum.photos/seed/wolf/600/800' },
-  { id: 3, title: { bs: 'Zlatokosa', en: 'Goldilocks' }, duration: '05:30', status: 'published', image: 'https://picsum.photos/seed/goldilocks/600/800' },
-  { id: 4, title: { bs: 'Ivica i Marica', en: 'Hansel and Gretel' }, duration: '09:00', status: 'published', image: 'https://picsum.photos/seed/forest/600/800' },
-  { id: 5, title: { bs: 'Snježna kraljica', en: 'The Snow Queen' }, duration: '--:--', status: 'comingSoon', image: 'https://picsum.photos/seed/snow/600/800' },
-  { id: 6, title: { bs: 'Aladin', en: 'Aladdin' }, duration: '--:--', status: 'comingSoon', image: 'https://picsum.photos/seed/desert/600/800' },
-];
-
 const effects = [
   { id: 'rain' as AmbientEffectId, icon: CloudRain, label: { bs: 'Ljetna kiša', en: 'Summer Rain' }, color: 'text-blue-400' },
   { id: 'leaves' as AmbientEffectId, icon: Trees, label: { bs: 'Noćna šuma', en: 'Night Forest' }, color: 'text-emerald-400' },
@@ -1170,80 +1161,6 @@ export default function App() {
           </div>
         </div>
       </section>
-
-      {false && (
-      <section>
-        <div className="max-w-7xl mx-auto">
-          <div className="flex flex-col md:flex-row justify-between items-end gap-10 mb-24 relative">
-            <div className="max-w-2xl">
-              <h2 className="text-11px font-black uppercase tracking-[0.4em] text-violet-500 mb-6">{t.nav.stories}</h2>
-              <h3 className="text-5xl md:text-7xl font-serif font-bold leading-[0.9]">{t.stories.title}</h3>
-            </div>
-            
-            {/* New Floating Element: Safe for Kids */}
-            <motion.div 
-              animate={{ y: [0, -15, 0] }}
-              transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-              className="absolute -top-10 right-0 glass px-6 py-3 rounded-2xl border-white/10 shadow-3xl z-50 hidden md:flex items-center gap-3"
-            >
-              <div className="w-8 h-8 rounded-lg bg-emerald-500/20 flex items-center justify-center">
-                <Heart className="text-emerald-400 w-5 h-5" />
-              </div>
-              <p className="text-[10px] font-black uppercase tracking-widest text-white">{t.stories.safeForKids}</p>
-            </motion.div>
-
-            <div className="flex gap-4">
-              <button className="px-8 py-3 rounded-full glass border-white/10 text-xs font-black uppercase tracking-widest hover:bg-white hover:text-black transition-all">
-                {t.stories.viewAll}
-              </button>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-12">
-            {stories.map((story) => (
-              <motion.div 
-                key={story.id}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                className="group"
-              >
-                <div className="relative aspect-[4/5] rounded-[2.5rem] overflow-hidden mb-8 border border-white/5">
-                  <img src={story.image} alt={story.title[lang]} className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-700" referrerPolicy="no-referrer" />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-60" />
-                  
-                  {story.status === 'comingSoon' && (
-                    <div className="absolute top-8 right-8 px-4 py-1.5 rounded-full bg-amber-500 text-black text-[10px] font-black uppercase tracking-widest">
-                      {t.stories.comingSoon}
-                    </div>
-                  )}
-
-                  {story.id === 1 && (
-                    <div className="absolute top-8 left-8 glass px-4 py-1.5 rounded-full border-white/20 text-white text-[10px] font-black uppercase tracking-widest z-20">
-                      🔥 {t.stories.popular}
-                    </div>
-                  )}
-
-                  <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                    <div className="w-20 h-20 rounded-full bg-white text-black flex items-center justify-center scale-75 group-hover:scale-100 transition-transform">
-                      <Play className="fill-black w-8 h-8 ml-1" />
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="flex justify-between items-start px-2">
-                  <div>
-                    <h4 className="text-3xl font-serif font-bold mb-2">{story.title[lang]}</h4>
-                    <p className="text-sm font-bold uppercase tracking-widest text-slate-500">{story.duration} MIN • {story.status === 'published' ? t.stories.published : t.stories.comingSoon}</p>
-                  </div>
-                  <ArrowRight className="w-6 h-6 text-white/20 group-hover:text-violet-500 group-hover:translate-x-2 transition-all" />
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
-      )}
 
       <div className="max-w-7xl mx-auto h-px bg-gradient-to-r from-transparent via-white/20 to-transparent mb-20" />
 
