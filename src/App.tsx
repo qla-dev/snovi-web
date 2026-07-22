@@ -444,11 +444,11 @@ function SosDonationPage({
           <div className="flex shrink-0 items-center gap-2 sm:gap-4">
             <a
               href={SOS_PAGE_PATH}
-              className="hidden items-center gap-2 rounded-full bg-blue-50 px-4 py-2 text-[10px] font-black uppercase tracking-[0.16em] text-blue-700 ring-1 ring-blue-100 sm:inline-flex"
+              className="hidden items-center sm:inline-flex"
               onClick={(event) => event.preventDefault()}
+              aria-label="SOS Dječija sela u BiH"
             >
-              <img src={sosLogoSrc} alt="" className="h-5 w-5 object-contain" loading="eager" />
-              SOS DJEČIJA SELA U BIH
+              <img src={sosFullLogoSrc} alt="SOS Dječija sela Bosna i Hercegovina" className="h-auto w-36 object-contain sm:w-40" loading="eager" />
             </a>
             <button
               type="button"
@@ -486,7 +486,7 @@ function SosDonationPage({
                   snovi.fm doniraju, doniraj i ti
                 </h1>
                 <p className="mt-7 max-w-2xl text-xl font-medium leading-8 text-blue-50/90">
-                  Uz svaku kupovinu godišnje pretplate za snovi.fm aplikaciju, snovi.fm donira 20% SOS Dječijim selima.
+                  Uz svaku kupovinu godišnje pretplate za snovi.fm aplikaciju, snovi.fm donira 20% SOS Dječijim selima u BiH.
                 </p>
               </div>
 
@@ -531,7 +531,7 @@ function SosDonationPage({
                   <div className="flex items-center justify-between gap-4">
                     <div>
                       <p className="text-sm font-semibold text-blue-950">Donacija koju pokriva snovi.fm</p>
-                      <p className="mt-1 text-xs text-blue-700">20% od godišnje pretplate ide SOS Dječijim selima.</p>
+                      <p className="mt-1 text-xs text-blue-700">20% od godišnje pretplate ide SOS Dječijim selima u BiH.</p>
                     </div>
                     <p className="font-black text-blue-700">{formatBam(snoviDonation)}</p>
                   </div>
@@ -543,7 +543,7 @@ function SosDonationPage({
                   className="flex w-full items-center justify-between rounded-2xl border border-dashed border-blue-300 bg-white px-4 py-4 text-left transition hover:border-blue-500 hover:bg-blue-50"
                 >
                   <span>
-                    <span className="block text-sm font-black uppercase tracking-[0.14em] text-blue-700">Želite još donirati?</span>
+                    <span className="block text-sm font-black uppercase tracking-[0.14em] text-blue-700">Želite i vi donirati?</span>
                     <span className="mt-1 block text-sm text-slate-500">Dodajte iznos po želji uz pretplatu.</span>
                   </span>
                   <Plus className="h-5 w-5 text-blue-700" />
@@ -1146,10 +1146,10 @@ export default function App() {
               event.preventDefault();
               navigateToPage('sosDonation');
             }}
-            className="inline-flex items-center gap-2 text-blue-400 transition-colors hover:text-blue-300"
+            className="inline-flex items-center transition-opacity hover:opacity-85"
+            aria-label="SOS Dječija sela u BiH"
           >
-            <img src={sosLogoSrc} alt="" className="h-5 w-5 object-contain" loading="eager" />
-            SOS DJEČIJE SELO
+            <img src={sosFullLogoSrc} alt="SOS Dječija sela Bosna i Hercegovina" className="h-auto w-36 object-contain" loading="eager" />
           </a>
           <a
             href={getPathForPage('methodology')}
