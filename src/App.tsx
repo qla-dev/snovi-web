@@ -80,6 +80,7 @@ const dedicationImageSrc = `${import.meta.env.BASE_URL}img/snovi1.jpg`;
 const sosBackgroundSrc = `${import.meta.env.BASE_URL}img/sos-children-bg.jpg`;
 const sosFamilyBackgroundSrc = `${import.meta.env.BASE_URL}img/sos-family-bg.jpg`;
 const sosLogoSrc = `${import.meta.env.BASE_URL}img/sos-childrens-villages-logo.png`;
+const sosFullLogoSrc = `${import.meta.env.BASE_URL}img/sos-djecija-sela-bih.png`;
 const SITE_ORIGIN = 'https://snovi.fm';
 const OG_IMAGE_PATH = '/img/snovi34.jpg';
 const SOS_PAGE_PATH = '/sos-djecije-selo';
@@ -405,6 +406,7 @@ function SosDonationPage({
   const [isOpening, setIsOpening] = useState(true);
   const [showExtraDonation, setShowExtraDonation] = useState(false);
   const [extraDonationInput, setExtraDonationInput] = useState('');
+  const [privacyConsent, setPrivacyConsent] = useState(false);
   const extraDonation = Math.max(0, Number(extraDonationInput) || 0);
   const snoviDonation = subscriptionPrice * 0.2;
   const appAmount = subscriptionPrice - snoviDonation;
@@ -446,7 +448,7 @@ function SosDonationPage({
               onClick={(event) => event.preventDefault()}
             >
               <img src={sosLogoSrc} alt="" className="h-5 w-5 object-contain" loading="eager" />
-              SOS DJEČIJE SELO
+              SOS DJEČIJA SELA U BIH
             </a>
             <button
               type="button"
@@ -477,7 +479,7 @@ function SosDonationPage({
               <div>
                 <div className="mb-8 inline-flex items-center gap-3 rounded-full border border-white/20 bg-white/12 px-4 py-2">
                   <img src={sosLogoSrc} alt="SOS Children's Villages" className="h-8 w-8 object-contain" loading="eager" />
-                  <span className="text-[10px] font-black uppercase tracking-[0.22em] text-blue-100">snovi.fm za SOS Dječije selo</span>
+                  <span className="text-[10px] font-black uppercase tracking-[0.22em] text-blue-100">snovi.fm za SOS Dječija sela u BiH</span>
                 </div>
 
                 <h1 className="max-w-3xl font-serif text-5xl font-bold leading-[0.92] tracking-tight sm:text-6xl xl:text-7xl">
@@ -510,7 +512,7 @@ function SosDonationPage({
                   <p className="text-sm font-semibold text-slate-500">Plaćanje za snovi.fm</p>
                   <h2 className="mt-2 text-4xl font-semibold tracking-tight">{formatBam(totalDue)}</h2>
                 </div>
-                <img src={sosLogoSrc} alt="SOS Dječije selo" className="h-14 w-14 object-contain" loading="eager" />
+                <img src={sosFullLogoSrc} alt="SOS Dječija sela Bosna i Hercegovina" className="h-auto w-40 object-contain sm:w-48" loading="eager" />
               </div>
 
               <div className="mb-8 space-y-5">
@@ -601,6 +603,28 @@ function SosDonationPage({
                   <input type="email" className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100" />
                 </label>
 
+                <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm leading-6 text-slate-700">
+                  <input
+                    type="checkbox"
+                    checked={privacyConsent}
+                    onChange={(event) => setPrivacyConsent(event.target.checked)}
+                    className="mt-1 h-4 w-4 shrink-0 accent-blue-600"
+                  />
+                  <span>
+                    Saglasan/a sam da se moji podaci (ime i prezime, e-mail adresa i iznos donacije) dostave SOS Dječijim selima u BiH i koriste u skladu sa{' '}
+                    <a
+                      href={getPathForPage('privacy')}
+                      onClick={(event) => {
+                        event.preventDefault();
+                        onNavigate('privacy');
+                      }}
+                      className="font-semibold text-blue-700 underline underline-offset-2"
+                    >
+                      Izjavom o privatnosti
+                    </a>.
+                  </span>
+                </label>
+
               </form>
             </div>
           </div>
@@ -643,19 +667,18 @@ function SosStorySection({
       <div className="absolute inset-0 -z-10 bg-[linear-gradient(90deg,rgba(3,24,54,0.72),rgba(3,24,54,0.46)),linear-gradient(180deg,rgba(6,44,95,0.48),rgba(6,44,95,0.68))]" />
       <div className="mx-auto grid max-w-7xl gap-12 lg:grid-cols-[1.15fr_0.85fr] lg:items-center">
         <div className="text-center lg:order-2 lg:text-right">
-          <img src={sosLogoSrc} alt="SOS Dječije selo" className="mx-auto mb-10 h-28 w-28 object-contain md:h-36 md:w-36 lg:mx-0 lg:ml-auto" loading="lazy" />
+          <img src={sosFullLogoSrc} alt="SOS Dječija sela Bosna i Hercegovina" className="mx-auto mb-10 h-auto w-full max-w-md object-contain lg:mx-0 lg:ml-auto" loading="lazy" />
           <p className="mb-5 text-[11px] font-black uppercase tracking-[0.36em] text-blue-200">priča iza donacije</p>
-          <h2 className="font-serif text-5xl font-bold leading-[0.95] md:text-7xl">Miran san je lakši kad dijete ima siguran dom.</h2>
+          <h2 className="font-serif text-5xl font-bold leading-[0.95] md:text-7xl">Svako dijete zaslužuje miran san i porodicu.</h2>
         </div>
         <div className="lg:order-1">
           <div className="grid gap-5 sm:grid-cols-2">
             {[
-              'Kupovinom godišnje pretplate podržavate rad SOS Dječijih sela Bosne i Hercegovine.',
-              'snovi.fm od svake kupovine izdvaja 20% (10 BAM) i izdvaja ih za konstantnu i direktnu podršku djeci bez starateljstva.',
-              'Također, ovim putem možete donirati i dodatni iznos koji unesete direktno u posebni odjeljak pri kupovini.',
-              'Cilj je jednostavan: više podrške za djecu kojoj je dom najvažnija priča.',
-            ].map((item) => (
-              <div key={item} className="rounded-2xl border border-white/12 bg-white/8 p-6">
+              'snovi.fm od svake godišnje pretplate izdvaja 20% (10 KM) za kontinuiranu i direktnu podršku djeci bez roditeljskog staranja u brizi SOS Dječijih sela u BiH.',
+              'I vi možete donirati dodatni iznos, koji ćete unijeti direktno u posebno predviđeni odjeljak pri kupovini.',
+              'Cilj je jednostavan: dati priliku svakom djetetu da odrasta u toplom porodičnom okruženju uz mirne snove.',
+            ].map((item, index) => (
+              <div key={item} className={`rounded-2xl border border-white/12 bg-white/8 p-6 ${index === 0 ? 'sm:col-span-2' : ''}`}>
                 <Heart className="mb-5 h-6 w-6 text-violet-300" />
                 <p className="text-lg font-medium leading-7 text-blue-50">{item}</p>
               </div>
@@ -669,7 +692,7 @@ function SosStorySection({
             }}
             className="mx-auto mt-8 inline-flex text-center text-base font-black uppercase tracking-[0.16em] text-blue-100 underline decoration-blue-300/60 underline-offset-8 transition hover:text-white hover:decoration-white lg:mx-0 lg:text-left"
           >
-            Kupi godišnju pretplatu i doniraj 10 KM SOS Dječijim selima
+            KUPI GODIŠNJU PRETPLATU, A SNOVI.FM ĆE DONIRATI 10 KM SOS DJEČIJIM SELIMA U BIH.
           </a>
         </div>
       </div>
