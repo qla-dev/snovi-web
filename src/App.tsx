@@ -571,7 +571,7 @@ function SosDonationPage({
                 <div className="space-y-3 border-t border-slate-200 pt-5 text-sm">
                   <div className="flex justify-between text-slate-600"><span>Za snovi.fm aplikaciju</span><span>{formatBam(appAmount)}</span></div>
                   <div className="flex justify-between text-slate-600"><span>Dodatna donacija</span><span>{formatBam(extraDonation)}</span></div>
-                  <div className="flex justify-between text-blue-700"><span>Ukupno za SOS</span><span>{formatBam(sosTotal)}</span></div>
+                  <div className="flex justify-between gap-4 text-blue-700"><span>Ukupno za SOS Dječija sela u BiH</span><span className="shrink-0">{formatBam(sosTotal)}</span></div>
                   <div className="flex justify-between border-t border-slate-200 pt-4 text-base font-bold"><span>Ukupno za platiti</span><span>{formatBam(totalDue)}</span></div>
                 </div>
               </div>
@@ -690,7 +690,7 @@ function SosStorySection({
               event.preventDefault();
               onNavigate('sosDonation');
             }}
-            className="mx-auto mt-8 inline-flex text-center text-base font-black uppercase tracking-[0.16em] text-blue-100 underline decoration-blue-300/60 underline-offset-8 transition hover:text-white hover:decoration-white lg:mx-0 lg:text-left"
+            className="mx-auto mt-8 flex max-w-3xl justify-center text-center text-base font-black uppercase leading-relaxed tracking-[0.16em] text-blue-100 underline decoration-blue-300/60 underline-offset-8 transition [text-wrap:balance] hover:text-white hover:decoration-white"
           >
             KUPI GODIŠNJU PRETPLATU, A SNOVI.FM ĆE DONIRATI 10 KM SOS DJEČIJIM SELIMA U BIH.
           </a>
@@ -1141,17 +1141,6 @@ export default function App() {
         
         <div className="hidden lg:flex items-center gap-10 text-[13px] uppercase tracking-widest font-bold text-slate-400">
           <a
-            href={SOS_PAGE_PATH}
-            onClick={(event) => {
-              event.preventDefault();
-              navigateToPage('sosDonation');
-            }}
-            className="inline-flex items-center transition-opacity hover:opacity-85"
-            aria-label="SOS Dječija sela u BiH"
-          >
-            <img src={sosFullLogoSrc} alt="SOS Dječija sela Bosna i Hercegovina" className="h-auto w-36 object-contain" loading="eager" />
-          </a>
-          <a
             href={getPathForPage('methodology')}
             onClick={(event) => {
               event.preventDefault();
@@ -1191,6 +1180,22 @@ export default function App() {
             <Globe className="w-3 h-3 text-violet-400" />
             {lang.toUpperCase()}
           </button>
+          <a
+            href={SOS_PAGE_PATH}
+            onClick={(event) => {
+              event.preventDefault();
+              navigateToPage('sosDonation');
+            }}
+            className="inline-flex shrink-0 items-center transition-opacity hover:opacity-85"
+            aria-label="SOS Dječija sela u BiH"
+          >
+            <img
+              src={sosFullLogoSrc}
+              alt="SOS Dječija sela Bosna i Hercegovina"
+              className="h-auto w-20 object-contain min-[420px]:w-24 sm:w-32 lg:w-36"
+              loading="eager"
+            />
+          </a>
           {headerStorePlatforms.map((platform) => (
             <React.Fragment key={platform}>
               <StoreDownloadButton
