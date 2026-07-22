@@ -310,10 +310,12 @@ function splitStoreLabel(label: string) {
 function StoreDownloadButton({
   platform,
   label,
+  mobileLabel,
   variant,
 }: {
   platform: StorePlatform;
   label?: string;
+  mobileLabel?: string;
   variant: 'header' | 'hero';
 }) {
   const Icon = platform === 'ios' ? Apple : PlayCircle;
@@ -334,7 +336,14 @@ function StoreDownloadButton({
   ) : (
     <>
       <Icon className="h-4 w-4 shrink-0" />
-      <span className="whitespace-nowrap">{storeLabel}</span>
+      {mobileLabel ? (
+        <>
+          <span className="whitespace-nowrap sm:hidden">{mobileLabel}</span>
+          <span className="hidden whitespace-nowrap sm:inline">{storeLabel}</span>
+        </>
+      ) : (
+        <span className="whitespace-nowrap">{storeLabel}</span>
+      )}
     </>
   );
 
@@ -1192,7 +1201,7 @@ export default function App() {
             <img
               src={sosFullLogoSrc}
               alt="SOS Dječija sela Bosna i Hercegovina"
-              className="h-auto w-20 object-contain min-[420px]:w-24 sm:w-32 lg:w-36"
+              className="h-10 w-auto object-contain sm:h-11"
               loading="eager"
             />
           </a>
@@ -1201,6 +1210,7 @@ export default function App() {
               <StoreDownloadButton
                 platform={platform}
                 variant="header"
+                mobileLabel={platform === 'ios' ? 'iOS' : 'Android'}
                 label={
                   useShortHeaderStoreLabels
                     ? platform === 'ios' ? 'iOS' : 'Android'
