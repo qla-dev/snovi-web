@@ -93,6 +93,7 @@ const DOWNLOAD_SHARE_PATH = '/download';
 // without removing the page/route/content. Flip back to true to re-show.
 const SOS_CAMPAIGN_VISIBLE = false;
 const APP_STORE_URL = 'https://apps.apple.com/app/snovi-fm/id6758638251';
+const GOOGLE_PLAY_URL = 'https://play.google.com/store/apps/details?id=snovi.qla.dev';
 type StorePlatform = 'ios' | 'android';
 
 type Page = 'app' | 'methodology' | 'ambients' | 'library' | 'privacy' | 'terms' | 'cookies' | 'sosDonation';
@@ -254,16 +255,20 @@ function detectHeaderStorePlatform(): StorePlatform | null {
   return null;
 }
 
-function showAndroidComingSoon() {
-  window.alert('Uskoro');
+function openStoreUrl(url: string) {
+  const openedWindow = window.open(url, '_blank', 'noopener,noreferrer');
+
+  if (!openedWindow) {
+    window.location.href = url;
+  }
 }
 
 function openAppStore() {
-  const openedWindow = window.open(APP_STORE_URL, '_blank', 'noopener,noreferrer');
+  openStoreUrl(APP_STORE_URL);
+}
 
-  if (!openedWindow) {
-    window.location.href = APP_STORE_URL;
-  }
+function openGooglePlay() {
+  openStoreUrl(GOOGLE_PLAY_URL);
 }
 
 function openStoreForPlatform(platform: StorePlatform) {
@@ -272,7 +277,7 @@ function openStoreForPlatform(platform: StorePlatform) {
     return;
   }
 
-  showAndroidComingSoon();
+  openGooglePlay();
 }
 
 function upsertMeta(selector: string, attributes: Record<string, string>) {
@@ -354,18 +359,15 @@ function StoreDownloadButton({
     </>
   );
 
-  if (platform === 'ios') {
-    return (
-      <button type="button" onClick={openAppStore} className={className}>
-        {content}
-      </button>
-    );
-  }
-
   return (
-    <button type="button" onClick={showAndroidComingSoon} className={className}>
+    <a
+      href={platform === 'ios' ? APP_STORE_URL : GOOGLE_PLAY_URL}
+      target="_blank"
+      rel="noreferrer"
+      className={className}
+    >
       {content}
-    </button>
+    </a>
   );
 }
 
@@ -835,6 +837,12 @@ function MobileBootShell({ onEnter }: { onEnter: () => void }) {
               className="rounded-2xl bg-white px-6 py-4 text-sm font-black uppercase tracking-[0.18em] text-black"
             >
               App Store
+            </a>
+            <a
+              href={GOOGLE_PLAY_URL}
+              className="rounded-2xl bg-white px-6 py-4 text-sm font-black uppercase tracking-[0.18em] text-black"
+            >
+              Google Play
             </a>
             <button
               type="button"

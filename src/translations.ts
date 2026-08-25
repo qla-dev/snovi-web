@@ -28,7 +28,7 @@ export const translations = {
       },
       download: {
         appStore: 'Dostupno na App Store',
-        googlePlay: 'Uskoro na Google Play',
+        googlePlay: 'Dostupno na Google Play',
       },
       review: {
         text: '"Spas za naše večeri!"',
@@ -192,7 +192,7 @@ export const translations = {
       },
       download: {
         appStore: 'Available on App Store',
-        googlePlay: 'Soon on Google Play',
+        googlePlay: 'Available on Google Play',
       },
       review: {
         text: '"A lifesaver for our evenings!"',
