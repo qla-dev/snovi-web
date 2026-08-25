@@ -85,7 +85,14 @@ const SITE_ORIGIN = 'https://snovi.fm';
 const OG_IMAGE_PATH = '/img/snovi34.jpg';
 const SOS_PAGE_PATH = '/sos-djecije-selo';
 const LEGACY_SOS_PAGE_PATH = '/donacija-za-sos-djecije-selo';
-const APP_STORE_URL = 'https://apps.apple.com/us/app/snovi-fm/id6758638251';
+// Smart share link used by the app's native share sheet (see predah SHARE_URL).
+// iOS/Android visitors go straight to their store; desktop visitors land on the
+// home page with the store-choice modal open.
+const DOWNLOAD_SHARE_PATH = '/download';
+// Temporarily hides all SOS Dječije selo UI references (header, footer, homepage section)
+// without removing the page/route/content. Flip back to true to re-show.
+const SOS_CAMPAIGN_VISIBLE = false;
+const APP_STORE_URL = 'https://apps.apple.com/app/snovi-fm/id6758638251';
 type StorePlatform = 'ios' | 'android';
 
 type Page = 'app' | 'methodology' | 'ambients' | 'library' | 'privacy' | 'terms' | 'cookies' | 'sosDonation';
@@ -932,6 +939,23 @@ export default function App() {
   }, []);
 
   useEffect(() => {
+    if (normalizePath(window.location.pathname) !== DOWNLOAD_SHARE_PATH) {
+      return;
+    }
+
+    window.history.replaceState({}, '', '/');
+
+    const mobilePlatform = detectHeaderStorePlatform();
+
+    if (mobilePlatform) {
+      openStoreForPlatform(mobilePlatform);
+      return;
+    }
+
+    setStoreChoiceModalOpen(true);
+  }, []);
+
+  useEffect(() => {
     const handlePopState = () => setPage(getPageFromPath());
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
@@ -1189,22 +1213,24 @@ export default function App() {
             <Globe className="w-3 h-3 text-violet-400" />
             {lang.toUpperCase()}
           </button>
-          <a
-            href={SOS_PAGE_PATH}
-            onClick={(event) => {
-              event.preventDefault();
-              navigateToPage('sosDonation');
-            }}
-            className="inline-flex shrink-0 items-center transition-opacity hover:opacity-85"
-            aria-label="SOS Dječija sela u BiH"
-          >
-            <img
-              src={sosFullLogoSrc}
-              alt="SOS Dječija sela Bosna i Hercegovina"
-              className="h-10 w-auto object-contain sm:h-11"
-              loading="eager"
-            />
-          </a>
+          {SOS_CAMPAIGN_VISIBLE && (
+            <a
+              href={SOS_PAGE_PATH}
+              onClick={(event) => {
+                event.preventDefault();
+                navigateToPage('sosDonation');
+              }}
+              className="inline-flex shrink-0 items-center transition-opacity hover:opacity-85"
+              aria-label="SOS Dječija sela u BiH"
+            >
+              <img
+                src={sosFullLogoSrc}
+                alt="SOS Dječija sela Bosna i Hercegovina"
+                className="h-10 w-auto object-contain sm:h-11"
+                loading="eager"
+              />
+            </a>
+          )}
           {headerStorePlatforms.map((platform) => (
             <React.Fragment key={platform}>
               <StoreDownloadButton
@@ -1471,8 +1497,8 @@ export default function App() {
 
       <div className="max-w-7xl mx-auto h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
 
-      {/* SOS Story Section */}
-      <SosStorySection onNavigate={navigateToPage} />
+      {/* SOS Story Section (temporarily hidden, see SOS_CAMPAIGN_VISIBLE) */}
+      {SOS_CAMPAIGN_VISIBLE && <SosStorySection onNavigate={navigateToPage} />}
 
       <>
       <div className="max-w-7xl mx-auto h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
@@ -1833,19 +1859,21 @@ export default function App() {
               <ul className="space-y-4 text-slate-500 font-bold text-sm">
                 <li><a href="#psychology" className="hover:text-violet-500 transition-colors">{t.nav.psychology}</a></li>
                 <li><a href="#effects" className="hover:text-violet-500 transition-colors">{t.nav.effects}</a></li>
-                <li>
-                  <a
-                    href={SOS_PAGE_PATH}
-                    onClick={(event) => {
-                      event.preventDefault();
-                      navigateToPage('sosDonation');
-                    }}
-                    className="inline-flex items-center gap-2 text-blue-400 transition-colors hover:text-blue-300"
-                  >
-                    <img src={sosLogoSrc} alt="" className="h-5 w-5 object-contain" loading="lazy" />
-                    SOS Dječije selo
-                  </a>
-                </li>
+                {SOS_CAMPAIGN_VISIBLE && (
+                  <li>
+                    <a
+                      href={SOS_PAGE_PATH}
+                      onClick={(event) => {
+                        event.preventDefault();
+                        navigateToPage('sosDonation');
+                      }}
+                      className="inline-flex items-center gap-2 text-blue-400 transition-colors hover:text-blue-300"
+                    >
+                      <img src={sosLogoSrc} alt="" className="h-5 w-5 object-contain" loading="lazy" />
+                      SOS Dječije selo
+                    </a>
+                  </li>
+                )}
               </ul>
             </div>
             <div>
