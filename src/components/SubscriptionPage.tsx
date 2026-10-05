@@ -5,20 +5,24 @@ import {
   ArrowRight,
   CheckCircle2,
   LoaderCircle,
+  Mail,
   Moon,
   PlayCircle,
   ShieldCheck,
-  Smartphone,
   Sparkles,
 } from 'lucide-react';
-import type { RedemptionInfo } from '@revenuecat/purchases-js';
 import {
+  claimVoucher,
   hasRevenueCatWebConfig,
   loadSubscriptionPlans,
   purchaseSubscriptionPlan,
   type SubscriptionPlan,
   type SubscriptionPlanId,
+  type Voucher,
 } from '../revenueCat';
+import { VoucherTicket } from './VoucherTicket';
+
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
 const brandLogoSrc = `${import.meta.env.BASE_URL}logo.png`;
 const heroImageSrc = `${import.meta.env.BASE_URL}img/snovi1.jpg`;
@@ -49,7 +53,12 @@ export function SubscriptionPage({
   const [selectedPlanId, setSelectedPlanId] = useState<SubscriptionPlanId>('yearly');
   const [isPurchasing, setIsPurchasing] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [redemption, setRedemption] = useState<RedemptionInfo | null | undefined>(undefined);
+  const [email, setEmail] = useState('');
+  const [emailTouched, setEmailTouched] = useState(false);
+  // After payment: claiming the voucher, showing it, or the claim failed.
+  const [purchaseState, setPurchaseState] = useState<'none' | 'claiming' | 'voucher' | 'claimFailed'>('none');
+  const [voucher, setVoucher] = useState<Voucher | null>(null);
+  const emailValid = EMAIL_PATTERN.test(email.trim());
 
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
@@ -84,8 +93,24 @@ export function SubscriptionPage({
 
   const selectedPlan = plans.find((plan) => plan.id === selectedPlanId) ?? plans[0];
 
+  const claim = async () => {
+    setPurchaseState('claiming');
+    try {
+      setVoucher(await claimVoucher(email.trim()));
+      setPurchaseState('voucher');
+    } catch (error) {
+      console.warn('[snovi] voucher claim failed', error);
+      setPurchaseState('claimFailed');
+    }
+  };
+
   const handlePurchase = async () => {
     if (!selectedPlan || isPurchasing) {
+      return;
+    }
+    if (!emailValid) {
+      setEmailTouched(true);
+      document.getElementById('voucher-email')?.focus();
       return;
     }
 
@@ -93,11 +118,11 @@ export function SubscriptionPage({
     setErrorMessage(null);
 
     try {
-      const outcome = await purchaseSubscriptionPlan(selectedPlan, termsUrl);
+      const outcome = await purchaseSubscriptionPlan(selectedPlan, email.trim(), termsUrl);
 
       if (outcome.status === 'success') {
-        setRedemption(outcome.result.redemptionInfo);
         window.scrollTo({ top: 0, behavior: 'smooth' });
+        await claim();
       }
     } catch (error) {
       console.warn('[RevenueCat] purchase failed', error);
@@ -106,8 +131,6 @@ export function SubscriptionPage({
       setIsPurchasing(false);
     }
   };
-
-  const redeemUrl = redemption?.redeemUrl ?? null;
 
   return (
     <div className="min-h-screen bg-[#050505] pb-40 font-sans text-white selection:bg-violet-500/30 lg:pb-16">
@@ -153,39 +176,46 @@ export function SubscriptionPage({
         </section>
 
         <section className="order-first flex flex-col lg:order-none">
-          {redemption !== undefined ? (
+          {purchaseState !== 'none' ? (
             <motion.div
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
-              className="rounded-[2.5rem] border border-emerald-400/30 bg-emerald-400/[0.06] p-8 md:p-10 lg:flex-1"
+              className="rounded-[2.5rem] border border-emerald-400/30 bg-emerald-400/[0.06] p-6 md:p-10 lg:flex-1"
             >
               <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-500 shadow-lg shadow-emerald-500/20">
                 <CheckCircle2 className="h-7 w-7 text-white" />
               </div>
               <h2 className="mt-6 font-serif text-4xl font-bold leading-none">Hvala, pretplata je aktivna!</h2>
-              <p className="mt-4 leading-7 text-slate-300">
-                {redeemUrl
-                  ? 'Potvrdu plaćanja smo poslali na vaš email. Preuzmite snovi.fm aplikaciju, a zatim otvorite link ispod na istom telefonu kako bi se pretplata prenijela u aplikaciju.'
-                  : 'Potvrdu plaćanja smo poslali na vaš email. Preuzmite snovi.fm aplikaciju za iOS ili Android.'}
-              </p>
 
-              {redeemUrl ? (
-                <a
-                  href={redeemUrl}
-                  className="mt-8 flex h-16 w-full items-center justify-center gap-3 rounded-2xl bg-violet-600 font-black uppercase tracking-widest text-white transition hover:bg-white hover:text-black"
-                >
-                  <Smartphone className="h-5 w-5" />
-                  Aktiviraj u aplikaciji
-                </a>
+              {purchaseState === 'claiming' ? (
+                <div className="mt-8 flex items-center gap-3 text-slate-300">
+                  <LoaderCircle className="h-5 w-5 animate-spin text-violet-300" />
+                  Pripremamo vaš kod za aktivaciju...
+                </div>
               ) : null}
 
-              {redemption?.redeemUrlRedirect ? (
-                <p className="mt-4 break-all text-sm text-slate-400">
-                  Kupili ste na računaru? Pošaljite sebi ovaj link i otvorite ga na telefonu:{' '}
-                  <a href={redemption.redeemUrlRedirect} className="font-semibold text-violet-300 underline underline-offset-2">
-                    {redemption.redeemUrlRedirect}
-                  </a>
-                </p>
+              {purchaseState === 'voucher' && voucher ? (
+                <>
+                  <p className="mt-4 leading-7 text-slate-300">
+                    {voucher.emailSent ? <>Kod smo poslali i na <b className="text-white">{voucher.email}</b>. </> : null}
+                    Aktivirajte ga u aplikaciji snovi.fm i pretplata je odmah tamo.
+                  </p>
+                  <div className="mt-8">
+                    <VoucherTicket code={voucher.code} subtitle={voucher.planLabel} />
+                  </div>
+                </>
+              ) : null}
+
+              {purchaseState === 'claimFailed' ? (
+                <div className="mt-6 space-y-4">
+                  <p className="rounded-2xl border border-amber-300/30 bg-amber-300/10 p-4 text-sm leading-6 text-amber-100">
+                    Plaćanje je prošlo, ali kod za aktivaciju još nije spreman. Pokušajte ponovo za nekoliko sekundi.
+                    Ako ne uspije, pišite nam na <a href="mailto:podrska@snovi.fm" className="font-bold underline">podrska@snovi.fm</a> sa emailom {email.trim()}.
+                  </p>
+                  <button type="button" onClick={() => void claim()} className="flex h-14 w-full items-center justify-center rounded-2xl bg-violet-600 font-black uppercase tracking-widest text-white transition hover:bg-white hover:text-black">
+                    Pokušaj ponovo
+                  </button>
+                </div>
               ) : null}
 
               <div className="mt-8 grid gap-3 sm:grid-cols-2">
@@ -265,6 +295,35 @@ export function SubscriptionPage({
                       );
                     })}
                   </div>
+
+                  <label className="mt-6 block" htmlFor="voucher-email">
+                    <span className="mb-2 flex items-center gap-2 text-sm font-bold text-slate-200">
+                      <Mail className="h-4 w-4 text-violet-300" />
+                      Email za vaučer <span className="text-violet-300">*</span>
+                    </span>
+                    <input
+                      id="voucher-email"
+                      type="email"
+                      inputMode="email"
+                      autoComplete="email"
+                      required
+                      value={email}
+                      onChange={(event) => setEmail(event.target.value)}
+                      onBlur={() => setEmailTouched(true)}
+                      placeholder="vas@email.com"
+                      aria-invalid={emailTouched && !emailValid}
+                      className={`h-14 w-full rounded-2xl border bg-white/[0.04] px-4 text-base text-white outline-none transition placeholder:text-slate-500 focus:border-violet-400 focus:ring-4 focus:ring-violet-500/20 ${
+                        emailTouched && !emailValid ? 'border-red-400/70' : 'border-white/10'
+                      }`}
+                    />
+                    <span className="mt-2 block text-xs leading-5 text-slate-400">
+                      {emailTouched && !emailValid ? (
+                        <span className="font-semibold text-red-300">Unesite ispravnu email adresu.</span>
+                      ) : (
+                        'Na ovaj email šaljemo vaučer sa kodom i linkom za aktivaciju aplikacije.'
+                      )}
+                    </span>
+                  </label>
 
                   {errorMessage ? (
                     <p className="mt-5 rounded-xl border border-red-400/30 bg-red-500/10 px-4 py-3 text-sm font-semibold text-red-200">{errorMessage}</p>

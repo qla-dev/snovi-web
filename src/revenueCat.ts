@@ -6,6 +6,7 @@ import {
   type Package,
   type PurchaseResult,
 } from '@revenuecat/purchases-js';
+import { API_BASE } from './appLinks';
 
 // Public RevenueCat Web Billing key (starts with "rcb_"). Safe to ship to the browser.
 // Set VITE_REVENUECAT_WEB_API_KEY in .env before running `npm run build`.
@@ -110,10 +111,11 @@ export type PurchaseOutcome =
   | { status: 'success'; result: PurchaseResult }
   | { status: 'cancelled' };
 
-export async function purchaseSubscriptionPlan(plan: SubscriptionPlan, termsUrl: string): Promise<PurchaseOutcome> {
+export async function purchaseSubscriptionPlan(plan: SubscriptionPlan, email: string, termsUrl: string): Promise<PurchaseOutcome> {
   try {
     const result = await getPurchases().purchase({
       rcPackage: plan.rcPackage,
+      customerEmail: email,
       selectedLocale: 'bs',
       defaultLocale: 'hr',
       termsAndConditionsUrl: termsUrl,
@@ -128,4 +130,51 @@ export async function purchaseSubscriptionPlan(plan: SubscriptionPlan, termsUrl:
 
     throw error;
   }
+}
+
+export type Voucher = {
+  code: string;
+  link: string;
+  planLabel: string;
+  email: string;
+  emailSent: boolean;
+  expiresAt: string | null;
+};
+
+/**
+ * Asks the backend for the voucher code of the purchase that was just made. The backend checks the
+ * purchase with RevenueCat itself, issues the code and emails it. Retried a few times, because
+ * RevenueCat can take a moment to report a fresh purchase.
+ */
+export async function claimVoucher(email: string): Promise<Voucher> {
+  const appUserId = getPurchases().getAppUserId();
+  let lastError: unknown = null;
+
+  for (let attempt = 0; attempt < 4; attempt++) {
+    if (attempt > 0) {
+      await new Promise((resolve) => window.setTimeout(resolve, attempt * 2000));
+    }
+
+    try {
+      const response = await fetch(`${API_BASE}/web-purchases/claim`, {
+        method: 'POST',
+        headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
+        body: JSON.stringify({ appUserId, email }),
+      });
+      const body = await response.json().catch(() => ({}));
+
+      if (response.ok && body?.data?.code) {
+        return body.data as Voucher;
+      }
+
+      lastError = new Error(body?.message || `HTTP ${response.status}`);
+      if (response.status === 422) {
+        break;
+      }
+    } catch (error) {
+      lastError = error;
+    }
+  }
+
+  throw lastError ?? new Error('Voucher nije izdat.');
 }

@@ -45,6 +45,9 @@ import { HeroLottieBackground } from './components/HeroLottieBackground';
 const SubscriptionPage = React.lazy(() =>
   import('./components/SubscriptionPage').then((module) => ({ default: module.SubscriptionPage })),
 );
+const PromoCodePage = React.lazy(() =>
+  import('./components/PromoCodePage').then((module) => ({ default: module.PromoCodePage })),
+);
 const KindergartenOfferPage = React.lazy(() =>
   import('./components/KindergartenOfferPage').then((module) => ({ default: module.KindergartenOfferPage })),
 );
@@ -87,6 +90,8 @@ const SITE_ORIGIN = 'https://snovi.fm';
 const OG_IMAGE_PATH = '/img/snovi34.jpg';
 const SUBSCRIBE_PAGE_PATH = '/pretplata';
 const KINDERGARTEN_OFFER_PATH = '/ponuda-obdanista';
+// Voucher links from emails and QR codes; with the app installed they open in the app instead.
+const PROMO_CODE_PATH = '/promo-code';
 // Smart share link used by the app's native share sheet (see predah SHARE_URL).
 // iOS/Android visitors go straight to their store; desktop visitors land on the
 // home page with the store-choice modal open.
@@ -95,7 +100,7 @@ const APP_STORE_URL = 'https://apps.apple.com/app/snovi-fm/id6758638251';
 const GOOGLE_PLAY_URL = 'https://play.google.com/store/apps/details?id=snovi.qla.dev';
 type StorePlatform = 'ios' | 'android';
 
-type Page = 'app' | 'methodology' | 'ambients' | 'library' | 'privacy' | 'terms' | 'cookies' | 'subscribe' | 'kindergartenOffer';
+type Page = 'app' | 'methodology' | 'ambients' | 'library' | 'privacy' | 'terms' | 'cookies' | 'subscribe' | 'kindergartenOffer' | 'promoCode';
 type LegalPageId = 'privacy' | 'terms' | 'cookies';
 
 type PageMeta = {
@@ -164,6 +169,13 @@ const PAGE_META: Record<Page, PageMeta> = {
     imagePath: '/img/snovi1.jpg',
     imageAlt: 'Majka i dijete slušaju snovi.fm priču pred spavanje',
   },
+  promoCode: {
+    title: 'snovi.fm - Vaš vaučer',
+    description: 'Aktivirajte snovi.fm premium kodom iz vaučera: preuzmite aplikaciju i otvorite link na telefonu.',
+    keywords: 'snovi.fm vaučer, promo kod, aktivacija',
+    path: PROMO_CODE_PATH,
+    imagePath: '/img/snovi1.jpg',
+  },
 };
 
 const SECTION_PAGE_IDS: Partial<Record<Page, string>> = {
@@ -214,6 +226,10 @@ function getPageFromPath(pathname = window.location.pathname): Page {
     return 'kindergartenOffer';
   }
 
+  if (path === PROMO_CODE_PATH || path.startsWith(`${PROMO_CODE_PATH}/`)) {
+    return 'promoCode';
+  }
+
   return 'app';
 }
 
@@ -228,6 +244,10 @@ function getPathForPage(page: Page) {
 
   if (page === 'kindergartenOffer') {
     return KINDERGARTEN_OFFER_PATH;
+  }
+
+  if (page === 'promoCode') {
+    return normalizePath(window.location.pathname);
   }
 
   if (page === 'methodology' || page === 'ambients' || page === 'library') {
@@ -722,7 +742,7 @@ export default function App() {
     upsertMeta('meta[name="title"]', { name: 'title', content: meta.title });
     upsertMeta('meta[name="description"]', { name: 'description', content: meta.description });
     upsertMeta('meta[name="keywords"]', { name: 'keywords', content: meta.keywords });
-    upsertMeta('meta[name="robots"]', { name: 'robots', content: 'index,follow,max-snippet:160,max-image-preview:large' });
+    upsertMeta('meta[name="robots"]', { name: 'robots', content: page === 'promoCode' ? 'noindex,nofollow' : 'index,follow,max-snippet:160,max-image-preview:large' });
     upsertMeta('meta[name="theme-color"]', { name: 'theme-color', content: '#050505' });
     upsertLink('link[rel="canonical"]', { rel: 'canonical', href: canonicalUrl });
     upsertMeta('meta[property="og:type"]', { property: 'og:type', content: 'website' });
@@ -913,6 +933,14 @@ export default function App() {
         appStoreUrl={APP_STORE_URL}
         googlePlayUrl={GOOGLE_PLAY_URL}
       />
+      </Suspense>
+    );
+  }
+
+  if (page === 'promoCode') {
+    return (
+      <Suspense fallback={<div className="min-h-screen bg-[#050505]" />}>
+        <PromoCodePage pathname={window.location.pathname} onHome={() => navigateToPage('app')} />
       </Suspense>
     );
   }
