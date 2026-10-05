@@ -985,7 +985,7 @@ export default function App() {
               event.preventDefault();
               navigateToPage('subscribe');
             }}
-            className="hidden h-10 shrink-0 items-center justify-center rounded-full bg-violet-600 px-4 text-[10px] font-black uppercase tracking-[0.12em] text-white transition-all hover:bg-white hover:text-black sm:inline-flex sm:h-11 sm:text-[11px]"
+            className="inline-flex h-10 shrink-0 items-center justify-center whitespace-nowrap rounded-full bg-violet-600 px-3 text-[10px] font-black uppercase tracking-[0.1em] text-white transition-all hover:bg-white hover:text-black sm:h-11 sm:px-4 sm:text-[11px] sm:tracking-[0.12em]"
           >
             Pretplati se
           </a>
