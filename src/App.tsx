@@ -45,6 +45,9 @@ import { HeroLottieBackground } from './components/HeroLottieBackground';
 const SubscriptionPage = React.lazy(() =>
   import('./components/SubscriptionPage').then((module) => ({ default: module.SubscriptionPage })),
 );
+const KindergartenOfferPage = React.lazy(() =>
+  import('./components/KindergartenOfferPage').then((module) => ({ default: module.KindergartenOfferPage })),
+);
 
 const effects = [
   { id: 'rain' as AmbientEffectId, icon: CloudRain, label: { bs: 'Ljetna kiša', en: 'Summer Rain' }, color: 'text-blue-400' },
@@ -83,6 +86,7 @@ const dedicationImageSrc = `${import.meta.env.BASE_URL}img/snovi1.jpg`;
 const SITE_ORIGIN = 'https://snovi.fm';
 const OG_IMAGE_PATH = '/img/snovi34.jpg';
 const SUBSCRIBE_PAGE_PATH = '/pretplata';
+const KINDERGARTEN_OFFER_PATH = '/ponuda-obdanista';
 // Smart share link used by the app's native share sheet (see predah SHARE_URL).
 // iOS/Android visitors go straight to their store; desktop visitors land on the
 // home page with the store-choice modal open.
@@ -91,7 +95,7 @@ const APP_STORE_URL = 'https://apps.apple.com/app/snovi-fm/id6758638251';
 const GOOGLE_PLAY_URL = 'https://play.google.com/store/apps/details?id=snovi.qla.dev';
 type StorePlatform = 'ios' | 'android';
 
-type Page = 'app' | 'methodology' | 'ambients' | 'library' | 'privacy' | 'terms' | 'cookies' | 'subscribe';
+type Page = 'app' | 'methodology' | 'ambients' | 'library' | 'privacy' | 'terms' | 'cookies' | 'subscribe' | 'kindergartenOffer';
 type LegalPageId = 'privacy' | 'terms' | 'cookies';
 
 type PageMeta = {
@@ -152,6 +156,14 @@ const PAGE_META: Record<Page, PageMeta> = {
     keywords: 'snovi.fm pretplata, premium, priče za djecu, godišnja pretplata, mjesečna pretplata',
     path: SUBSCRIBE_PAGE_PATH,
   },
+  kindergartenOffer: {
+    title: 'snovi.fm - Ponuda za obdaništa',
+    description: 'snovi.fm za obdaništa: audio priče i ambijenti za popodnevni odmor, gotove poruke za roditelje i 12 mjeseci premium pristupa besplatno za vaspitačice.',
+    keywords: 'snovi.fm obdaništa, vrtić, vaspitačice, priče za odmor, audio priče za djecu',
+    path: KINDERGARTEN_OFFER_PATH,
+    imagePath: '/img/snovi1.jpg',
+    imageAlt: 'Majka i dijete slušaju snovi.fm priču pred spavanje',
+  },
 };
 
 const SECTION_PAGE_IDS: Partial<Record<Page, string>> = {
@@ -198,6 +210,10 @@ function getPageFromPath(pathname = window.location.pathname): Page {
     return 'subscribe';
   }
 
+  if (path === KINDERGARTEN_OFFER_PATH) {
+    return 'kindergartenOffer';
+  }
+
   return 'app';
 }
 
@@ -208,6 +224,10 @@ function getPathForPage(page: Page) {
 
   if (page === 'subscribe') {
     return SUBSCRIBE_PAGE_PATH;
+  }
+
+  if (page === 'kindergartenOffer') {
+    return KINDERGARTEN_OFFER_PATH;
   }
 
   if (page === 'methodology' || page === 'ambients' || page === 'library') {
@@ -893,6 +913,14 @@ export default function App() {
         appStoreUrl={APP_STORE_URL}
         googlePlayUrl={GOOGLE_PLAY_URL}
       />
+      </Suspense>
+    );
+  }
+
+  if (page === 'kindergartenOffer') {
+    return (
+      <Suspense fallback={<div className="min-h-screen bg-[#F8FAFC]" />}>
+        <KindergartenOfferPage onBack={() => navigateToPage('app')} />
       </Suspense>
     );
   }

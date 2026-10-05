@@ -20,6 +20,16 @@ const pages = [
     imageAlt: 'snovi.fm pretplata za priče i ambijente',
   },
   {
+    route: '/ponuda-obdanista',
+    lang: 'bs',
+    locale: 'bs_BA',
+    title: 'snovi.fm - Ponuda za obdaništa',
+    description: 'snovi.fm za obdaništa: audio priče i ambijenti za popodnevni odmor, gotove poruke za roditelje i 12 mjeseci premium pristupa besplatno za vaspitačice.',
+    keywords: 'snovi.fm obdaništa, vrtić, vaspitačice, priče za odmor, audio priče za djecu',
+    image: `${siteOrigin}/img/snovi1.jpg`,
+    imageAlt: 'Majka i dijete slušaju snovi.fm priču pred spavanje',
+  },
+  {
     route: '/metodologija',
     lang: 'bs',
     locale: 'bs_BA',
