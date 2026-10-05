@@ -10,15 +10,14 @@ const siteOrigin = 'https://snovi.fm';
 
 const pages = [
   {
-    route: '/sos-djecije-selo',
+    route: '/pretplata',
     lang: 'bs',
     locale: 'bs_BA',
-    title: 'snovi.fm x SOS Dječije selo',
-    description:
-      'Kupi godišnju pretplatu za snovi.fm aplikaciju i podrži SOS Dječija sela. snovi.fm donira 20% od svake godišnje pretplate.',
-    keywords: 'snovi.fm, SOS Dječije selo, SOS Dječija sela, godišnja pretplata, donacija, priče za djecu',
-    image: `${siteOrigin}/img/sos-family-bg.jpg`,
-    imageAlt: 'Porodica zajedno čita kao podrška snovi.fm i SOS Dječijim selima',
+    title: 'snovi.fm - Pretplata',
+    description: 'Pretplatite se na snovi.fm i otključajte cijelu biblioteku priča, naratora i ambijenata za mirniji san djece.',
+    keywords: 'snovi.fm pretplata, premium, priče za djecu, godišnja pretplata, mjesečna pretplata',
+    image: `${siteOrigin}/img/snovi34.jpg`,
+    imageAlt: 'snovi.fm pretplata za priče i ambijente',
   },
   {
     route: '/metodologija',

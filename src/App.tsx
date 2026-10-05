@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { Suspense, useState, useEffect, useCallback } from 'react';
 import { motion, MotionConfig } from 'motion/react';
 import { 
   Play, 
@@ -30,8 +30,6 @@ import {
   Users,
   Shield,
   X,
-  CreditCard,
-  Plus,
 } from 'lucide-react';
 import { translations, Language } from './translations';
 import {
@@ -42,6 +40,11 @@ import {
   useLandingExperience,
 } from './components/LandingExperience';
 import { HeroLottieBackground } from './components/HeroLottieBackground';
+
+// Lazy so the RevenueCat Web Billing SDK only loads on /pretplata.
+const SubscriptionPage = React.lazy(() =>
+  import('./components/SubscriptionPage').then((module) => ({ default: module.SubscriptionPage })),
+);
 
 const effects = [
   { id: 'rain' as AmbientEffectId, icon: CloudRain, label: { bs: 'Ljetna kiša', en: 'Summer Rain' }, color: 'text-blue-400' },
@@ -77,26 +80,18 @@ function AnimatedWidgetShell({ children, className = '', strength = 1 }: Animate
 const brandLogoSrc = `${import.meta.env.BASE_URL}logo.png`;
 const qlaLogoSrc = 'https://deklarant.ai/build/images/logo-qla-dark.png';
 const dedicationImageSrc = `${import.meta.env.BASE_URL}img/snovi1.jpg`;
-const sosBackgroundSrc = `${import.meta.env.BASE_URL}img/sos-children-bg.jpg`;
-const sosFamilyBackgroundSrc = `${import.meta.env.BASE_URL}img/sos-family-bg.jpg`;
-const sosLogoSrc = `${import.meta.env.BASE_URL}img/sos-childrens-villages-logo.png`;
-const sosFullLogoSrc = `${import.meta.env.BASE_URL}img/sos-djecija-sela-bih.png`;
 const SITE_ORIGIN = 'https://snovi.fm';
 const OG_IMAGE_PATH = '/img/snovi34.jpg';
-const SOS_PAGE_PATH = '/sos-djecije-selo';
-const LEGACY_SOS_PAGE_PATH = '/donacija-za-sos-djecije-selo';
+const SUBSCRIBE_PAGE_PATH = '/pretplata';
 // Smart share link used by the app's native share sheet (see predah SHARE_URL).
 // iOS/Android visitors go straight to their store; desktop visitors land on the
 // home page with the store-choice modal open.
 const DOWNLOAD_SHARE_PATH = '/download';
-// Temporarily hides all SOS Dječije selo UI references (header, footer, homepage section)
-// without removing the page/route/content. Flip back to true to re-show.
-const SOS_CAMPAIGN_VISIBLE = false;
 const APP_STORE_URL = 'https://apps.apple.com/app/snovi-fm/id6758638251';
 const GOOGLE_PLAY_URL = 'https://play.google.com/store/apps/details?id=snovi.qla.dev';
 type StorePlatform = 'ios' | 'android';
 
-type Page = 'app' | 'methodology' | 'ambients' | 'library' | 'privacy' | 'terms' | 'cookies' | 'sosDonation';
+type Page = 'app' | 'methodology' | 'ambients' | 'library' | 'privacy' | 'terms' | 'cookies' | 'subscribe';
 type LegalPageId = 'privacy' | 'terms' | 'cookies';
 
 type PageMeta = {
@@ -151,13 +146,11 @@ const PAGE_META: Record<Page, PageMeta> = {
     keywords: 'snovi.fm kolačići, cookies, web tehnologije, privatnost',
     path: '/cookies',
   },
-  sosDonation: {
-    title: 'snovi.fm x SOS Dječije selo',
-    description: 'Kupi godišnju pretplatu za snovi.fm aplikaciju i podrži SOS Dječija sela. snovi.fm donira 20% od svake godišnje pretplate.',
-    keywords: 'snovi.fm, SOS Dječije selo, SOS Dječija sela, godišnja pretplata, donacija, priče za djecu',
-    path: SOS_PAGE_PATH,
-    imagePath: '/img/sos-family-bg.jpg',
-    imageAlt: 'Porodica zajedno čita kao podrška snovi.fm i SOS Dječijim selima',
+  subscribe: {
+    title: 'snovi.fm - Pretplata',
+    description: 'Pretplatite se na snovi.fm i otključajte cijelu biblioteku priča, naratora i ambijenata za mirniji san djece.',
+    keywords: 'snovi.fm pretplata, premium, priče za djecu, godišnja pretplata, mjesečna pretplata',
+    path: SUBSCRIBE_PAGE_PATH,
   },
 };
 
@@ -201,8 +194,8 @@ function getPageFromPath(pathname = window.location.pathname): Page {
     return 'library';
   }
 
-  if (path === SOS_PAGE_PATH || path === LEGACY_SOS_PAGE_PATH) {
-    return 'sosDonation';
+  if (path === SUBSCRIBE_PAGE_PATH) {
+    return 'subscribe';
   }
 
   return 'app';
@@ -213,8 +206,8 @@ function getPathForPage(page: Page) {
     return '/';
   }
 
-  if (page === 'sosDonation') {
-    return SOS_PAGE_PATH;
+  if (page === 'subscribe') {
+    return SUBSCRIBE_PAGE_PATH;
   }
 
   if (page === 'methodology' || page === 'ambients' || page === 'library') {
@@ -411,308 +404,30 @@ function WaitlistPanel({
   );
 }
 
-function formatBam(value: number) {
-  return `${value.toFixed(2)} BAM`;
-}
-
-function SosDonationPage({
-  onNavigate,
-}: {
-  onNavigate: (page: Page) => void;
-}) {
-  const subscriptionPrice = 50;
-  const [isOpening, setIsOpening] = useState(true);
-  const [showExtraDonation, setShowExtraDonation] = useState(false);
-  const [extraDonationInput, setExtraDonationInput] = useState('');
-  const [privacyConsent, setPrivacyConsent] = useState(false);
-  const extraDonation = Math.max(0, Number(extraDonationInput) || 0);
-  const snoviDonation = subscriptionPrice * 0.2;
-  const appAmount = subscriptionPrice - snoviDonation;
-  const sosTotal = snoviDonation + extraDonation;
-  const totalDue = subscriptionPrice + extraDonation;
-
-  useEffect(() => {
-    setIsOpening(true);
-    window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
-    document.documentElement.scrollTop = 0;
-    document.body.scrollTop = 0;
-
-    const hideTimer = window.setTimeout(() => {
-      window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
-      setIsOpening(false);
-    }, 420);
-
-    return () => window.clearTimeout(hideTimer);
-  }, []);
-
+function SubscribeCtaSection({ onSubscribe }: { onSubscribe: () => void }) {
   return (
-    <div className="min-h-screen bg-[#f7f9fc] pb-24 font-sans text-slate-950 selection:bg-blue-500/20">
-      {isOpening ? (
-        <div className="fixed inset-0 z-[220] flex items-center justify-center bg-[#050505]/92">
-          <LoaderCircle className="h-12 w-12 animate-spin text-violet-400" />
+    <section id="pretplata" className="relative isolate overflow-hidden px-6 py-16 scroll-mt-28 md:py-24">
+      <div className="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_center,rgba(124,58,237,0.22),transparent_70%)]" />
+      <div className="glass mx-auto flex max-w-5xl flex-col items-center gap-8 rounded-[3rem] border border-white/10 px-6 py-12 text-center md:px-16 md:py-16">
+        <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-5 py-2 text-[11px] font-black uppercase tracking-[0.3em] text-violet-300">
+          <Sparkles className="h-3.5 w-3.5" />
+          snovi.fm premium
         </div>
-      ) : null}
-
-      <nav className="sticky top-0 z-[100] border-b border-slate-200/80 bg-white/95 px-4 shadow-sm md:px-6">
-        <div className="mx-auto flex h-20 max-w-7xl items-center justify-between gap-3">
-          <button className="flex min-w-0 items-center" type="button" onClick={() => onNavigate('app')} aria-label="snovi.fm">
-            <BrandLogo className="h-16 w-auto max-w-[190px] sm:h-20 sm:max-w-[320px]" loading="eager" />
-          </button>
-
-          <div className="flex shrink-0 items-center gap-2 sm:gap-4">
-            <a
-              href={SOS_PAGE_PATH}
-              className="hidden items-center sm:inline-flex"
-              onClick={(event) => event.preventDefault()}
-              aria-label="SOS Dječija sela u BiH"
-            >
-              <img src={sosFullLogoSrc} alt="SOS Dječija sela Bosna i Hercegovina" className="h-auto w-36 object-contain sm:w-40" loading="eager" />
-            </a>
-            <button
-              type="button"
-              onClick={() => onNavigate('app')}
-              className="inline-flex h-11 items-center justify-center rounded-full bg-slate-950 px-4 text-[10px] font-black uppercase tracking-[0.16em] text-white transition hover:bg-blue-700 sm:px-5"
-            >
-              Nazad
-            </button>
-          </div>
-        </div>
-      </nav>
-
-      <main>
-        <section className="grid min-h-[calc(100vh-5rem)] lg:grid-cols-[minmax(0,1fr)_minmax(440px,0.86fr)]">
-          <div className="relative isolate flex min-h-[620px] overflow-hidden bg-[#062c5f] px-6 py-12 text-white sm:px-10 lg:min-h-0 lg:px-14 lg:py-16">
-            <img
-              src={sosBackgroundSrc}
-              alt=""
-              className="absolute inset-0 h-full w-full object-cover"
-              loading="eager"
-              decoding="async"
-              referrerPolicy="no-referrer"
-            />
-            <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(3,24,54,0.92),rgba(3,24,54,0.62)),linear-gradient(180deg,rgba(3,24,54,0.18),rgba(1,10,24,0.84))]" />
-            <div className="absolute inset-x-0 bottom-0 h-44 bg-gradient-to-t from-[#031836] to-transparent" />
-
-            <div className="relative z-10 flex w-full flex-col justify-between">
-              <div>
-                <div className="mb-8 inline-flex items-center gap-3 rounded-full border border-white/20 bg-white/12 px-4 py-2">
-                  <img src={sosLogoSrc} alt="SOS Children's Villages" className="h-8 w-8 object-contain" loading="eager" />
-                  <span className="text-[10px] font-black uppercase tracking-[0.22em] text-blue-100">snovi.fm za SOS Dječija sela u BiH</span>
-                </div>
-
-                <h1 className="max-w-3xl font-serif text-5xl font-bold leading-[0.92] tracking-tight sm:text-6xl xl:text-7xl">
-                  snovi.fm doniraju, doniraj i ti
-                </h1>
-                <p className="mt-7 max-w-2xl text-xl font-medium leading-8 text-blue-50/90">
-                  Uz svaku kupovinu godišnje pretplate za snovi.fm aplikaciju, snovi.fm donira 20% SOS Dječijim selima u BiH.
-                </p>
-              </div>
-
-              <div className="mt-14 grid gap-4 sm:grid-cols-3">
-                {[
-                  { value: '50 BAM', label: 'godišnja pretplata' },
-                  { value: '20%', label: 'donira snovi.fm' },
-                  { value: '10 BAM', label: 'ide za SOS odmah' },
-                ].map((item) => (
-                  <div key={item.label} className="rounded-2xl border border-white/16 bg-white/10 p-5 shadow-2xl shadow-black/20">
-                    <p className="text-3xl font-black tracking-tight text-white">{item.value}</p>
-                    <p className="mt-2 text-[10px] font-black uppercase tracking-[0.2em] text-blue-100/80">{item.label}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white px-4 py-8 text-slate-950 sm:px-8 lg:px-12 lg:py-12">
-            <div className="mx-auto max-w-xl">
-              <div className="mb-8 flex items-center justify-between gap-4">
-                <div>
-                  <p className="text-sm font-semibold text-slate-500">Plaćanje za snovi.fm</p>
-                  <h2 className="mt-2 text-4xl font-semibold tracking-tight">{formatBam(totalDue)}</h2>
-                </div>
-                <img src={sosFullLogoSrc} alt="SOS Dječija sela Bosna i Hercegovina" className="h-auto w-40 object-contain sm:w-48" loading="eager" />
-              </div>
-
-              <div className="mb-8 space-y-5">
-                <div className="flex items-center gap-4">
-                  <div className="h-14 w-14 shrink-0 overflow-hidden rounded-xl bg-blue-50">
-                    <img src={brandLogoSrc} alt="" className="h-full w-full object-contain p-2" loading="lazy" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="font-semibold leading-snug">Godišnja pretplata za snovi.fm aplikaciju</p>
-                    <p className="mt-1 text-sm text-slate-500">Količina 1</p>
-                  </div>
-                  <p className="font-semibold">{formatBam(subscriptionPrice)}</p>
-                </div>
-
-                <div className="rounded-2xl bg-blue-50 p-4 ring-1 ring-blue-100">
-                  <div className="flex items-center justify-between gap-4">
-                    <div>
-                      <p className="text-sm font-semibold text-blue-950">Donacija koju pokriva snovi.fm</p>
-                      <p className="mt-1 text-xs text-blue-700">20% od godišnje pretplate ide SOS Dječijim selima u BiH.</p>
-                    </div>
-                    <p className="font-black text-blue-700">{formatBam(snoviDonation)}</p>
-                  </div>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => setShowExtraDonation(true)}
-                  className="flex w-full items-center justify-between rounded-2xl border border-dashed border-blue-300 bg-white px-4 py-4 text-left transition hover:border-blue-500 hover:bg-blue-50"
-                >
-                  <span>
-                    <span className="block text-sm font-black uppercase tracking-[0.14em] text-blue-700">Želite i vi donirati?</span>
-                    <span className="mt-1 block text-sm text-slate-500">Dodajte iznos po želji uz pretplatu.</span>
-                  </span>
-                  <Plus className="h-5 w-5 text-blue-700" />
-                </button>
-
-                {showExtraDonation ? (
-                  <label className="block">
-                    <span className="mb-2 block text-sm font-semibold text-slate-700">Dodatna donacija za SOS Dječije selo</span>
-                    <div className="flex overflow-hidden rounded-xl border border-slate-300 bg-white focus-within:border-blue-500 focus-within:ring-4 focus-within:ring-blue-100">
-                      <input
-                        type="number"
-                        min="0"
-                        step="1"
-                        inputMode="decimal"
-                        value={extraDonationInput}
-                        onChange={(event) => setExtraDonationInput(event.target.value)}
-                        placeholder="0"
-                        className="min-w-0 flex-1 px-4 py-3 text-base outline-none"
-                      />
-                      <span className="flex items-center bg-slate-50 px-4 text-sm font-bold text-slate-500">BAM</span>
-                    </div>
-                  </label>
-                ) : null}
-
-                <div className="space-y-3 border-t border-slate-200 pt-5 text-sm">
-                  <div className="flex justify-between text-slate-600"><span>Za snovi.fm aplikaciju</span><span>{formatBam(appAmount)}</span></div>
-                  <div className="flex justify-between text-slate-600"><span>Dodatna donacija</span><span>{formatBam(extraDonation)}</span></div>
-                  <div className="flex justify-between gap-4 text-blue-700"><span>Ukupno za SOS Dječija sela u BiH</span><span className="shrink-0">{formatBam(sosTotal)}</span></div>
-                  <div className="flex justify-between border-t border-slate-200 pt-4 text-base font-bold"><span>Ukupno za platiti</span><span>{formatBam(totalDue)}</span></div>
-                </div>
-              </div>
-
-              <form className="space-y-5" onSubmit={(event) => event.preventDefault()}>
-                <div className="flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-slate-50 py-3 text-sm font-semibold text-slate-700">
-                  <CreditCard className="h-4 w-4" />
-                  Plaćanje karticom
-                </div>
-
-                <label className="block">
-                  <span className="mb-2 block text-sm font-semibold text-slate-700">Ime na kartici</span>
-                  <input className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100" />
-                </label>
-
-                <div>
-                  <p className="mb-2 text-sm font-semibold text-slate-700">Podaci o kartici</p>
-                  <div className="overflow-hidden rounded-xl border border-slate-300 bg-white focus-within:border-blue-500 focus-within:ring-4 focus-within:ring-blue-100">
-                    <input aria-label="Broj kartice" placeholder="1234 1234 1234 1234" className="w-full border-b border-slate-200 px-4 py-3 outline-none" />
-                    <div className="grid grid-cols-2">
-                      <input aria-label="Datum isteka" placeholder="MM / GG" className="border-r border-slate-200 px-4 py-3 outline-none" />
-                      <input aria-label="CVC" placeholder="CVC" className="px-4 py-3 outline-none" />
-                    </div>
-                  </div>
-                </div>
-
-                <label className="block">
-                  <span className="mb-2 block text-sm font-semibold text-slate-700">Email</span>
-                  <input type="email" className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100" />
-                </label>
-
-                <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm leading-6 text-slate-700">
-                  <input
-                    type="checkbox"
-                    checked={privacyConsent}
-                    onChange={(event) => setPrivacyConsent(event.target.checked)}
-                    className="mt-1 h-4 w-4 shrink-0 accent-blue-600"
-                  />
-                  <span>
-                    Saglasan/a sam da se moji podaci (ime i prezime, e-mail adresa i iznos donacije) dostave SOS Dječijim selima u BiH i koriste u skladu sa{' '}
-                    <a
-                      href={getPathForPage('privacy')}
-                      onClick={(event) => {
-                        event.preventDefault();
-                        onNavigate('privacy');
-                      }}
-                      className="font-semibold text-blue-700 underline underline-offset-2"
-                    >
-                      Izjavom o privatnosti
-                    </a>.
-                  </span>
-                </label>
-
-              </form>
-            </div>
-          </div>
-        </section>
-
-      </main>
-      <div className="fixed inset-x-0 bottom-0 z-[120] border-t border-slate-200 bg-white px-4 py-3 shadow-[0_-20px_60px_-30px_rgba(15,23,42,0.45)] sm:px-6">
-        <div className="mx-auto max-w-xl space-y-3">
-          <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-center text-sm font-semibold text-amber-800">
-            Donacije još uvijek nisu dostupne. Molimo, vratite se ubrzo
-          </p>
-          <button
-            className="flex h-14 w-full cursor-not-allowed items-center justify-center rounded-xl bg-slate-300 text-sm font-black uppercase tracking-[0.14em] text-slate-500 shadow-none"
-            disabled
-            aria-disabled="true"
-          >
-            Plati {formatBam(totalDue)}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function SosStorySection({
-  onNavigate,
-}: {
-  onNavigate: (page: Page) => void;
-}) {
-  return (
-    <section id="waitlist" className="relative isolate overflow-hidden bg-[#062c5f] px-6 py-14 text-white scroll-mt-28 md:py-20">
-      <img
-        src={sosFamilyBackgroundSrc}
-        alt=""
-        className="absolute inset-0 -z-20 h-full w-full object-cover"
-        loading="lazy"
-        decoding="async"
-        referrerPolicy="no-referrer"
-      />
-      <div className="absolute inset-0 -z-10 bg-[linear-gradient(90deg,rgba(3,24,54,0.72),rgba(3,24,54,0.46)),linear-gradient(180deg,rgba(6,44,95,0.48),rgba(6,44,95,0.68))]" />
-      <div className="mx-auto grid max-w-7xl gap-12 lg:grid-cols-[1.15fr_0.85fr] lg:items-center">
-        <div className="text-center lg:order-2 lg:text-right">
-          <img src={sosFullLogoSrc} alt="SOS Dječija sela Bosna i Hercegovina" className="mx-auto mb-10 h-auto w-full max-w-md object-contain lg:mx-0 lg:ml-auto" loading="lazy" />
-          <p className="mb-5 text-[11px] font-black uppercase tracking-[0.36em] text-blue-200">priča iza donacije</p>
-          <h2 className="font-serif text-5xl font-bold leading-[0.95] md:text-7xl">Svako dijete zaslužuje miran san i porodicu.</h2>
-        </div>
-        <div className="lg:order-1">
-          <div className="grid gap-5 sm:grid-cols-2">
-            {[
-              'snovi.fm od svake godišnje pretplate izdvaja 20% (10 KM) za kontinuiranu i direktnu podršku djeci bez roditeljskog staranja u brizi SOS Dječijih sela u BiH.',
-              'I vi možete donirati dodatni iznos, koji ćete unijeti direktno u posebno predviđeni odjeljak pri kupovini.',
-              'Cilj je jednostavan: dati priliku svakom djetetu da odrasta u toplom porodičnom okruženju uz mirne snove.',
-            ].map((item, index) => (
-              <div key={item} className={`rounded-2xl border border-white/12 bg-white/8 p-6 ${index === 0 ? 'sm:col-span-2' : ''}`}>
-                <Heart className="mb-5 h-6 w-6 text-violet-300" />
-                <p className="text-lg font-medium leading-7 text-blue-50">{item}</p>
-              </div>
-            ))}
-          </div>
-          <a
-            href={SOS_PAGE_PATH}
-            onClick={(event) => {
-              event.preventDefault();
-              onNavigate('sosDonation');
-            }}
-            className="mx-auto mt-8 flex max-w-3xl justify-center text-center text-base font-black uppercase leading-relaxed tracking-[0.16em] text-blue-100 underline decoration-blue-300/60 underline-offset-8 transition [text-wrap:balance] hover:text-white hover:decoration-white"
-          >
-            KUPI GODIŠNJU PRETPLATU, A SNOVI.FM ĆE DONIRATI 10 KM SOS DJEČIJIM SELIMA U BIH.
-          </a>
-        </div>
+        <h2 className="max-w-3xl font-serif text-5xl font-bold leading-[0.95] tracking-tight md:text-7xl">Pretplati se odmah</h2>
+        <p className="max-w-2xl text-lg font-medium leading-8 text-slate-400 md:text-xl">
+          Otključaj cijelu biblioteku priča, naratora i ambijenata. Mirnije večeri za cijelu porodicu, od prve noći.
+        </p>
+        <a
+          href={SUBSCRIBE_PAGE_PATH}
+          onClick={(event) => {
+            event.preventDefault();
+            onSubscribe();
+          }}
+          className="group flex h-20 w-full max-w-md items-center justify-center gap-3 rounded-2xl bg-violet-600 px-10 font-black uppercase tracking-widest text-white shadow-2xl shadow-violet-500/20 transition-all hover:bg-white hover:text-black"
+        >
+          Pretplati se
+          <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
+        </a>
       </div>
     </section>
   );
@@ -1163,8 +878,23 @@ export default function App() {
   const headerStorePlatforms: StorePlatform[] = headerStorePlatform ? [headerStorePlatform] : ['ios', 'android'];
   const useShortHeaderStoreLabels = headerStorePlatforms.length > 1;
 
-  if (page === 'sosDonation') {
-    return <SosDonationPage onNavigate={navigateToPage} />;
+  if (page === 'subscribe') {
+    return (
+      <Suspense
+        fallback={(
+          <div className="flex min-h-screen items-center justify-center bg-[#050505]">
+            <LoaderCircle className="h-12 w-12 animate-spin text-violet-400" />
+          </div>
+        )}
+      >
+      <SubscriptionPage
+        onBack={() => navigateToPage('app')}
+        termsUrl={`${SITE_ORIGIN}${getPathForPage('terms')}`}
+        appStoreUrl={APP_STORE_URL}
+        googlePlayUrl={GOOGLE_PLAY_URL}
+      />
+      </Suspense>
+    );
   }
 
   if (LEGAL_PAGES.has(page)) {
@@ -1221,24 +951,16 @@ export default function App() {
             <Globe className="w-3 h-3 text-violet-400" />
             {lang.toUpperCase()}
           </button>
-          {SOS_CAMPAIGN_VISIBLE && (
-            <a
-              href={SOS_PAGE_PATH}
-              onClick={(event) => {
-                event.preventDefault();
-                navigateToPage('sosDonation');
-              }}
-              className="inline-flex shrink-0 items-center transition-opacity hover:opacity-85"
-              aria-label="SOS Dječija sela u BiH"
-            >
-              <img
-                src={sosFullLogoSrc}
-                alt="SOS Dječija sela Bosna i Hercegovina"
-                className="h-10 w-auto object-contain sm:h-11"
-                loading="eager"
-              />
-            </a>
-          )}
+          <a
+            href={SUBSCRIBE_PAGE_PATH}
+            onClick={(event) => {
+              event.preventDefault();
+              navigateToPage('subscribe');
+            }}
+            className="hidden h-10 shrink-0 items-center justify-center rounded-full bg-violet-600 px-4 text-[10px] font-black uppercase tracking-[0.12em] text-white transition-all hover:bg-white hover:text-black sm:inline-flex sm:h-11 sm:text-[11px]"
+          >
+            Pretplati se
+          </a>
           {headerStorePlatforms.map((platform) => (
             <React.Fragment key={platform}>
               <StoreDownloadButton
@@ -1505,8 +1227,7 @@ export default function App() {
 
       <div className="max-w-7xl mx-auto h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
 
-      {/* SOS Story Section (temporarily hidden, see SOS_CAMPAIGN_VISIBLE) */}
-      {SOS_CAMPAIGN_VISIBLE && <SosStorySection onNavigate={navigateToPage} />}
+      <SubscribeCtaSection onSubscribe={() => navigateToPage('subscribe')} />
 
       <>
       <div className="max-w-7xl mx-auto h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
@@ -1845,7 +1566,7 @@ export default function App() {
         viewAllLabel={t.stories.viewAll}
         popularLabel={t.stories.popular}
         comingSoonLabel={t.stories.comingSoon}
-        onLockedStoryClick={() => navigateToPage('sosDonation')}
+        onLockedStoryClick={() => navigateToPage('subscribe')}
       />
 
       <div className="max-w-7xl mx-auto h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
@@ -1867,21 +1588,18 @@ export default function App() {
               <ul className="space-y-4 text-slate-500 font-bold text-sm">
                 <li><a href="#psychology" className="hover:text-violet-500 transition-colors">{t.nav.psychology}</a></li>
                 <li><a href="#effects" className="hover:text-violet-500 transition-colors">{t.nav.effects}</a></li>
-                {SOS_CAMPAIGN_VISIBLE && (
-                  <li>
-                    <a
-                      href={SOS_PAGE_PATH}
-                      onClick={(event) => {
-                        event.preventDefault();
-                        navigateToPage('sosDonation');
-                      }}
-                      className="inline-flex items-center gap-2 text-blue-400 transition-colors hover:text-blue-300"
-                    >
-                      <img src={sosLogoSrc} alt="" className="h-5 w-5 object-contain" loading="lazy" />
-                      SOS Dječije selo
-                    </a>
-                  </li>
-                )}
+                <li>
+                  <a
+                    href={SUBSCRIBE_PAGE_PATH}
+                    onClick={(event) => {
+                      event.preventDefault();
+                      navigateToPage('subscribe');
+                    }}
+                    className="hover:text-violet-500 transition-colors"
+                  >
+                    Pretplata
+                  </a>
+                </li>
               </ul>
             </div>
             <div>
