@@ -1,6 +1,5 @@
 import {
   ErrorCode,
-  PackageType,
   Purchases,
   PurchasesError,
   type Package,
@@ -13,15 +12,14 @@ import { API_BASE } from './appLinks';
 const REVENUECAT_WEB_API_KEY = (import.meta.env.VITE_REVENUECAT_WEB_API_KEY as string | undefined)?.trim() || '';
 const APP_USER_ID_STORAGE_KEY = 'snovi.rc.appUserId';
 
-export type SubscriptionPlanId = 'yearly' | 'monthly';
+// The only thing sold on the web: a one-time voucher for one year of snovi.fm (RevenueCat product "snovi_vaucer").
+const VOUCHER_PRODUCT_ID = 'snovi_vaucer';
 
-export type SubscriptionPlan = {
-  id: SubscriptionPlanId;
+export type VoucherProduct = {
   rcPackage: Package;
-  title: string;
   formattedPrice: string;
-  pricePerMonth: string | null;
-  trialLabel: string | null;
+  // The same price in the other local currency (KM for a EUR price, EUR for a KM price), or null.
+  altPrice: string | null;
 };
 
 let purchasesInstance: Purchases | null = null;
@@ -60,61 +58,47 @@ function getPurchases() {
   return purchasesInstance;
 }
 
-function formatTrial(rcPackage: Package) {
-  const duration = rcPackage.product.freeTrialPhase?.periodDuration;
-  const match = duration?.match(/^P(\d+)([DWMY])$/);
+// 1 EUR = 1.95583 KM (fixed rate), shown rounded: 25 EUR is about 50 KM.
+function toAltPrice(amountMicros: number, currency: string) {
+  const amount = amountMicros / 1_000_000;
 
-  if (!match) {
+  if (currency === 'EUR') {
+    return `${Math.round(amount * 2)} KM`;
+  }
+  if (currency === 'BAM') {
+    return `€${Math.round(amount / 2)}`;
+  }
+  return null;
+}
+
+export async function loadVoucherProduct(): Promise<VoucherProduct | null> {
+  const offerings = await getPurchases().getOfferings();
+  const packages = [
+    ...(offerings.current?.availablePackages ?? []),
+    ...Object.values(offerings.all).flatMap((offering) => offering.availablePackages),
+  ];
+  const rcPackage = packages.find((item) => item.product.identifier === VOUCHER_PRODUCT_ID);
+
+  if (!rcPackage) {
     return null;
   }
 
-  const count = Number(match[1]);
-  const unit = match[2] as 'D' | 'W' | 'M' | 'Y';
-  const label = {
-    D: `${count} dana`,
-    W: `${count * 7} dana`,
-    M: count === 1 ? '1 mjesec' : `${count} mjeseca`,
-    Y: count === 1 ? '1 godina' : `${count} godine`,
-  }[unit];
-  return `${label} besplatno`;
-}
-
-function toPlan(id: SubscriptionPlanId, rcPackage: Package): SubscriptionPlan {
-  const product = rcPackage.product;
-  const basePhase = product.defaultSubscriptionOption?.base;
-
+  const price = rcPackage.product.currentPrice;
   return {
-    id,
     rcPackage,
-    title: id === 'yearly' ? 'Godišnja pretplata' : 'Mjesečna pretplata',
-    formattedPrice: product.currentPrice.formattedPrice,
-    pricePerMonth: id === 'yearly' ? basePhase?.pricePerMonth?.formattedPrice ?? null : null,
-    trialLabel: formatTrial(rcPackage),
+    formattedPrice: price.formattedPrice,
+    altPrice: toAltPrice(price.amountMicros, price.currency),
   };
-}
-
-export async function loadSubscriptionPlans(): Promise<SubscriptionPlan[]> {
-  const offerings = await getPurchases().getOfferings();
-  const packages = offerings.current?.availablePackages ?? [];
-  const yearly = packages.find((item) => item.packageType === PackageType.Annual)
-    ?? packages.find((item) => /(annual|year|yearly|12m)/i.test(item.product.identifier));
-  const monthly = packages.find((item) => item.packageType === PackageType.Monthly)
-    ?? packages.find((item) => /(month|monthly|1m)/i.test(item.product.identifier));
-
-  return [
-    yearly ? toPlan('yearly', yearly) : null,
-    monthly ? toPlan('monthly', monthly) : null,
-  ].filter((plan): plan is SubscriptionPlan => Boolean(plan));
 }
 
 export type PurchaseOutcome =
   | { status: 'success'; result: PurchaseResult }
   | { status: 'cancelled' };
 
-export async function purchaseSubscriptionPlan(plan: SubscriptionPlan, email: string, termsUrl: string): Promise<PurchaseOutcome> {
+export async function purchaseVoucher(product: VoucherProduct, email: string, termsUrl: string): Promise<PurchaseOutcome> {
   try {
     const result = await getPurchases().purchase({
-      rcPackage: plan.rcPackage,
+      rcPackage: product.rcPackage,
       customerEmail: email,
       selectedLocale: 'bs',
       defaultLocale: 'hr',

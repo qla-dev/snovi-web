@@ -4,9 +4,9 @@ import {
   Apple,
   ArrowRight,
   CheckCircle2,
+  Gift,
   LoaderCircle,
   Mail,
-  Moon,
   PlayCircle,
   ShieldCheck,
   Sparkles,
@@ -14,11 +14,10 @@ import {
 import {
   claimVoucher,
   hasRevenueCatWebConfig,
-  loadSubscriptionPlans,
-  purchaseSubscriptionPlan,
-  type SubscriptionPlan,
-  type SubscriptionPlanId,
+  loadVoucherProduct,
+  purchaseVoucher,
   type Voucher,
+  type VoucherProduct,
 } from '../revenueCat';
 import { VoucherTicket } from './VoucherTicket';
 
@@ -32,7 +31,7 @@ const BENEFITS = [
   'Svi ambijenti i miks zvukova za san',
   'Nove priče i naratori redovno',
   'Bez reklama, sigurno za djecu',
-  'Otkaži bilo kada',
+  'Jednokratna uplata, bez automatskog obnavljanja',
 ];
 
 type LoadState = 'loading' | 'ready' | 'unavailable';
@@ -49,8 +48,7 @@ export function SubscriptionPage({
   googlePlayUrl: string;
 }) {
   const [loadState, setLoadState] = useState<LoadState>(hasRevenueCatWebConfig() ? 'loading' : 'unavailable');
-  const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
-  const [selectedPlanId, setSelectedPlanId] = useState<SubscriptionPlanId>('yearly');
+  const [product, setProduct] = useState<VoucherProduct | null>(null);
   const [isPurchasing, setIsPurchasing] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [email, setEmail] = useState('');
@@ -69,15 +67,14 @@ export function SubscriptionPage({
 
     let cancelled = false;
 
-    loadSubscriptionPlans()
-      .then((nextPlans) => {
+    loadVoucherProduct()
+      .then((nextProduct) => {
         if (cancelled) {
           return;
         }
 
-        setPlans(nextPlans);
-        setSelectedPlanId(nextPlans[0]?.id ?? 'yearly');
-        setLoadState(nextPlans.length ? 'ready' : 'unavailable');
+        setProduct(nextProduct);
+        setLoadState(nextProduct ? 'ready' : 'unavailable');
       })
       .catch((error) => {
         console.warn('[RevenueCat] getOfferings failed', error);
@@ -91,8 +88,6 @@ export function SubscriptionPage({
     };
   }, []);
 
-  const selectedPlan = plans.find((plan) => plan.id === selectedPlanId) ?? plans[0];
-
   const claim = async () => {
     setPurchaseState('claiming');
     try {
@@ -105,7 +100,7 @@ export function SubscriptionPage({
   };
 
   const handlePurchase = async () => {
-    if (!selectedPlan || isPurchasing) {
+    if (!product || isPurchasing) {
       return;
     }
     if (!emailValid) {
@@ -118,7 +113,7 @@ export function SubscriptionPage({
     setErrorMessage(null);
 
     try {
-      const outcome = await purchaseSubscriptionPlan(selectedPlan, email.trim(), termsUrl);
+      const outcome = await purchaseVoucher(product, email.trim(), termsUrl);
 
       if (outcome.status === 'success') {
         window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -159,10 +154,10 @@ export function SubscriptionPage({
             snovi.fm premium
           </div>
           <h1 className="mt-8 max-w-2xl font-serif text-5xl font-bold leading-[0.92] tracking-tight md:text-7xl">
-            Pretplati se i otključaj svaku večernju priču.
+            Godinu dana večernjih priča, za vas ili na poklon.
           </h1>
           <p className="mt-6 max-w-xl text-lg font-medium leading-8 text-slate-300">
-            Mirniji odlazak na spavanje uz priče, naratore i ambijente koje djeca vole. Jedna pretplata za cijelu porodicu.
+            Mirniji odlazak na spavanje uz priče, naratore i ambijente koje djeca vole. Jedan vaučer za cijelu porodicu.
           </p>
 
           <ul className="mt-10 grid gap-4 sm:grid-cols-2">
@@ -185,7 +180,7 @@ export function SubscriptionPage({
               <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-500 shadow-lg shadow-emerald-500/20">
                 <CheckCircle2 className="h-7 w-7 text-white" />
               </div>
-              <h2 className="mt-6 font-serif text-4xl font-bold leading-none">Hvala, pretplata je aktivna!</h2>
+              <h2 className="mt-6 font-serif text-4xl font-bold leading-none">Hvala, vaučer je vaš!</h2>
 
               {purchaseState === 'claiming' ? (
                 <div className="mt-8 flex items-center gap-3 text-slate-300">
@@ -198,7 +193,7 @@ export function SubscriptionPage({
                 <>
                   <p className="mt-4 leading-7 text-slate-300">
                     {voucher.emailSent ? <>Kod smo poslali i na <b className="text-white">{voucher.email}</b>. </> : null}
-                    Aktivirajte ga u aplikaciji snovi.fm i pretplata je odmah tamo.
+                    Aktivirajte ga u aplikaciji snovi.fm ili ga poklonite: kod vrijedi godinu dana od aktivacije.
                   </p>
                   <div className="mt-8">
                     <VoucherTicket code={voucher.code} subtitle={voucher.planLabel} />
@@ -230,8 +225,8 @@ export function SubscriptionPage({
           ) : (
             <div className="flex flex-col rounded-[2.5rem] border border-white/10 bg-[#071728] p-6 shadow-[0_30px_90px_-35px_rgba(0,0,0,0.9)] md:p-10 lg:flex-1">
               <div className="flex items-center gap-3">
-                <Moon className="h-6 w-6 text-violet-300" />
-                <h2 className="font-serif text-3xl font-bold leading-none md:text-4xl">Odaberite plan</h2>
+                <Gift className="h-6 w-6 text-violet-300" />
+                <h2 className="font-serif text-3xl font-bold leading-none md:text-4xl">Godišnji vaučer</h2>
               </div>
 
               {loadState === 'loading' ? (
@@ -258,42 +253,23 @@ export function SubscriptionPage({
 
               {loadState === 'ready' ? (
                 <>
-                  <div className="mt-8 space-y-4" role="radiogroup" aria-label="Plan pretplate">
-                    {plans.map((plan) => {
-                      const isSelected = plan.id === selectedPlan?.id;
-
-                      return (
-                        <button
-                          key={plan.id}
-                          type="button"
-                          role="radio"
-                          aria-checked={isSelected}
-                          onClick={() => setSelectedPlanId(plan.id)}
-                          className={`relative flex w-full items-center justify-between gap-4 rounded-2xl border p-5 text-left transition ${
-                            isSelected
-                              ? 'border-violet-400 bg-violet-500/15 ring-2 ring-violet-400/40'
-                              : 'border-white/10 bg-white/[0.03] hover:border-white/25'
-                          }`}
-                        >
-                          {plan.id === 'yearly' ? (
-                            <span className="absolute -top-3 right-5 rounded-full bg-emerald-500 px-3 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-white">
-                              Najisplativije
-                            </span>
-                          ) : null}
-                          <span className="flex items-center gap-4">
-                            <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 ${isSelected ? 'border-violet-300' : 'border-white/30'}`}>
-                              {isSelected ? <span className="h-3 w-3 rounded-full bg-violet-300" /> : null}
-                            </span>
-                            <span>
-                              <span className="block font-bold">{plan.title}</span>
-                              {plan.trialLabel ? <span className="mt-1 block text-sm text-emerald-300">{plan.trialLabel}</span> : null}
-                              {plan.pricePerMonth ? <span className="mt-1 block text-sm text-slate-400">{plan.pricePerMonth} mjesečno</span> : null}
-                            </span>
-                          </span>
-                          <span className="shrink-0 text-xl font-black">{plan.formattedPrice}</span>
-                        </button>
-                      );
-                    })}
+                  <div className="relative mt-8 flex items-center justify-between gap-4 rounded-2xl border border-violet-400 bg-violet-500/15 p-5 ring-2 ring-violet-400/40">
+                    <span className="absolute -top-3 right-5 rounded-full bg-emerald-500 px-3 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-white">
+                      Idealno za poklon
+                    </span>
+                    <span className="flex items-center gap-4">
+                      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 border-violet-300">
+                        <span className="h-3 w-3 rounded-full bg-violet-300" />
+                      </span>
+                      <span>
+                        <span className="block font-bold">Vaučer na 1 godinu</span>
+                        <span className="mt-1 block text-sm text-slate-400">Jednokratna uplata · za vas ili kao poklon</span>
+                      </span>
+                    </span>
+                    <span className="shrink-0 text-right">
+                      <span className="block text-xl font-black">{product?.formattedPrice}</span>
+                      {product?.altPrice ? <span className="mt-1 block text-sm text-slate-400">≈ {product.altPrice}</span> : null}
+                    </span>
                   </div>
 
                   <label className="mt-6 block" htmlFor="voucher-email">
@@ -320,7 +296,7 @@ export function SubscriptionPage({
                       {emailTouched && !emailValid ? (
                         <span className="font-semibold text-red-300">Unesite ispravnu email adresu.</span>
                       ) : (
-                        'Na ovaj email šaljemo vaučer sa kodom i linkom za aktivaciju aplikacije.'
+                        'Na ovaj email šaljemo vaučer sa kodom i linkom za aktivaciju. Ako je poklon, samo ga proslijedite.'
                       )}
                     </span>
                   </label>
@@ -333,11 +309,11 @@ export function SubscriptionPage({
                     <button
                       type="button"
                       onClick={() => void handlePurchase()}
-                      disabled={!selectedPlan || isPurchasing}
+                      disabled={!product || isPurchasing}
                       className="group mx-auto flex h-16 w-full max-w-xl items-center justify-center gap-3 rounded-2xl bg-violet-600 font-black uppercase tracking-widest text-white shadow-2xl shadow-violet-500/20 transition hover:bg-white hover:text-black disabled:cursor-wait disabled:opacity-70"
                     >
                       {isPurchasing ? <LoaderCircle className="h-5 w-5 animate-spin" /> : null}
-                      Pretplati se {selectedPlan ? `· ${selectedPlan.formattedPrice}` : ''}
+                      Kupi vaučer {product ? `· ${product.formattedPrice}` : ''}
                       {!isPurchasing ? <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" /> : null}
                     </button>
                   </div>
@@ -345,7 +321,7 @@ export function SubscriptionPage({
                   <p className="mt-6 flex items-start gap-2 text-xs leading-5 text-slate-500">
                     <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-slate-400" />
                     <span>
-                      Sigurno plaćanje karticom preko RevenueCat / Stripe. Pretplata se automatski obnavlja dok je ne otkažete.
+                      Sigurno plaćanje karticom preko RevenueCat / Stripe. Plaćate jednom, bez automatskog obnavljanja.
                       Kupovinom prihvatate{' '}
                       <a href={termsUrl} className="underline underline-offset-2 hover:text-white">uslove korištenja</a>.
                     </span>
