@@ -17,6 +17,7 @@ import {
   User,
 } from 'lucide-react';
 import type { Language } from '../translations';
+import { API_BASE } from '../appLinks';
 
 type Category = {
   id: number;
@@ -99,7 +100,7 @@ type FixedMiniPlayerBarProps = {
 
 const PUBLIC_BASE_URL = import.meta.env.BASE_URL;
 const FALLBACK_IMAGE = `${PUBLIC_BASE_URL}img/snovi34.jpg`;
-const API_BASE_URL = String(import.meta.env.VITE_SNOVI_API_BASE_URL || 'https://snovi.qla.dev/api').replace(/\/+$/, '');
+const API_BASE_URL = API_BASE;
 const PUBLISHED_STORIES_URL = `${API_BASE_URL}/stories/published?limit=60&sort=asc`;
 const ALL_MAIN_TAB_ID = 'LIBRARY_ALL';
 const ALL_SUB_TAB_ID = 'ALL';

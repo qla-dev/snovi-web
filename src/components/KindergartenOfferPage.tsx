@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
+import { API_ORIGIN } from '../appLinks';
 import {
   ArrowRight,
   CheckCircle2,
@@ -20,7 +21,7 @@ const brandLogoSrc = `${import.meta.env.BASE_URL}logo.png`;
 const qlaLogoSrc = 'https://deklarant.ai/build/images/logo-qla.png';
 const CONTACT_EMAIL = 'podrska@snovi.fm';
 const CONTACT_MAILTO = `mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent('Ponuda za obdaništa - snovi.fm')}`;
-const MEDIA = 'https://snovi.qla.dev/storage/images/';
+const MEDIA = `${API_ORIGIN}/storage/images/`;
 
 const cn = (...classes: Array<string | false | null | undefined>) => classes.filter(Boolean).join(' ');
 

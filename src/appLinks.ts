@@ -1,4 +1,5 @@
-export const API_BASE = 'https://snovi.qla.dev/api';
+export const API_ORIGIN = String(import.meta.env.VITE_SNOVI_API_ORIGIN || 'https://snovi.flexguide.org').replace(/\/+$/, '');
+export const API_BASE = `${API_ORIGIN}/api`;
 export const APP_STORE_URL = 'https://apps.apple.com/app/snovi-fm/id6758638251';
 export const GOOGLE_PLAY_URL = 'https://play.google.com/store/apps/details?id=snovi.qla.dev';
 
