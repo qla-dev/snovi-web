@@ -34,6 +34,12 @@ const BENEFITS = [
   'Jednokratna uplata, bez automatskog obnavljanja',
 ];
 
+const VOUCHER_STEPS = [
+  'Platite vaučer karticom.',
+  'Vaučer automatski stiže na email.',
+  'Aktivirajte ga u SNOVI aplikaciji.',
+];
+
 type LoadState = 'loading' | 'ready' | 'unavailable';
 
 export function SubscriptionPage({
@@ -264,6 +270,7 @@ export function SubscriptionPage({
                       <span>
                         <span className="block font-bold">Vaučer na 1 godinu</span>
                         <span className="mt-1 block text-sm text-slate-400">Jednokratna uplata · za vas ili kao poklon</span>
+                        <span className="mt-1 block text-sm font-semibold text-emerald-300">12 mjeseci pristupa od trenutka aktivacije vaučera</span>
                       </span>
                     </span>
                     <span className="shrink-0 text-right">
@@ -275,7 +282,7 @@ export function SubscriptionPage({
                   <label className="mt-6 block" htmlFor="voucher-email">
                     <span className="mb-2 flex items-center gap-2 text-sm font-bold text-slate-200">
                       <Mail className="h-4 w-4 text-violet-300" />
-                      Email za vaučer <span className="text-violet-300">*</span>
+                      Na koji email da pošaljemo vaučer? <span className="text-violet-300">*</span>
                     </span>
                     <input
                       id="voucher-email"
@@ -296,7 +303,7 @@ export function SubscriptionPage({
                       {emailTouched && !emailValid ? (
                         <span className="font-semibold text-red-300">Unesite ispravnu email adresu.</span>
                       ) : (
-                        'Na ovaj email šaljemo vaučer sa kodom i linkom za aktivaciju. Ako je poklon, samo ga proslijedite.'
+                        'Nakon uspješne uplate automatski dobijate poklon vaučer s QR kodom i aktivacijskim kodom. Možete ga koristiti sami ili proslijediti kao poklon.'
                       )}
                     </span>
                   </label>
@@ -313,10 +320,21 @@ export function SubscriptionPage({
                       className="group mx-auto flex h-16 w-full max-w-xl items-center justify-center gap-3 rounded-2xl bg-violet-600 font-black uppercase tracking-widest text-white shadow-2xl shadow-violet-500/20 transition hover:bg-white hover:text-black disabled:cursor-wait disabled:opacity-70"
                     >
                       {isPurchasing ? <LoaderCircle className="h-5 w-5 animate-spin" /> : null}
-                      Kupi vaučer {product ? `· ${product.formattedPrice}` : ''}
+                      Kupi poklon vaučer
                       {!isPurchasing ? <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" /> : null}
                     </button>
                   </div>
+
+                  <ol className="mt-6 space-y-3">
+                    {VOUCHER_STEPS.map((step, index) => (
+                      <li key={step} className="flex items-center gap-3 text-sm font-semibold text-slate-200">
+                        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-violet-500/20 text-xs font-black text-violet-200">
+                          {index + 1}
+                        </span>
+                        {step}
+                      </li>
+                    ))}
+                  </ol>
 
                   <p className="mt-6 flex items-start gap-2 text-xs leading-5 text-slate-500">
                     <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-slate-400" />
