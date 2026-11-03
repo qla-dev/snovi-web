@@ -136,6 +136,8 @@ putenv('PATH='.$nodeBinDir.PATH_SEPARATOR.$currentPath);
 $npmCommand = escapeshellarg($npm);
 
 $commands = [
+    // dist/ is rebuilt here on every deploy, so local build output must not block the pull.
+    ['label' => 'Discarding local build output', 'command' => 'git checkout -- dist'],
     ['label' => 'Pulling latest frontend code', 'command' => 'git pull --ff-only'],
     ['label' => 'Installing frontend dependencies', 'command' => $npmCommand.' ci --no-audit --no-fund'],
     ['label' => 'Building snovi.fm frontend', 'command' => $npmCommand.' run build'],
