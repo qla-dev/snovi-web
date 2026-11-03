@@ -4,10 +4,10 @@ import {
   Apple,
   BookOpen,
   CheckCircle2,
-  Copy,
   Gift,
   Heart,
   Instagram,
+  Link2,
   LoaderCircle,
   Moon,
   Music,
@@ -55,22 +55,11 @@ const perks = [
   { icon: Waves, title: 'Ambijenti', text: 'Kiša, šuma i valovi koji ostaju uz dijete dok ne zaspi.' },
 ];
 
-/** One gift code: copy it, open the app with it on a phone, or scan its QR code on a computer. */
+/** One gift code: its deep link, open the app with it on a phone, or scan its QR code on a computer. */
 const GiftCodeCard: React.FC<{ code: string; index: number; isMobile: boolean }> = ({ code, index, isMobile }) => {
-  const [copied, setCopied] = useState(false);
   const [showQr, setShowQr] = useState(false);
   const [appMissing, setAppMissing] = useState(false);
   const platform = detectMobilePlatform();
-
-  const copy = async () => {
-    try {
-      await navigator.clipboard.writeText(code);
-      setCopied(true);
-      window.setTimeout(() => setCopied(false), 1800);
-    } catch {
-      setCopied(false);
-    }
-  };
 
   return (
     <motion.li
@@ -94,14 +83,12 @@ const GiftCodeCard: React.FC<{ code: string; index: number; isMobile: boolean }>
       <div className="my-4 border-t-2 border-dashed border-slate-200" />
 
       <div className="flex gap-2">
-        <button
-          type="button"
-          onClick={() => void copy()}
+        <a
+          href={promoCodeUrl(code)}
           className="inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-xl border border-slate-200 px-3 text-sm font-bold text-slate-700 transition hover:border-violet-400 hover:text-violet-700"
         >
-          {copied ? <CheckCircle2 className="h-4 w-4 text-emerald-600" /> : <Copy className="h-4 w-4" />}
-          {copied ? 'Kopirano' : 'Kopiraj'}
-        </button>
+          <Link2 className="h-4 w-4" /> Link
+        </a>
         {isMobile ? (
           <button
             type="button"
