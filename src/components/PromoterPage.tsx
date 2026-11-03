@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import {
   Apple,
@@ -9,6 +9,7 @@ import {
   Instagram,
   Link2,
   LoaderCircle,
+  Lock,
   Moon,
   Music,
   PlayCircle,
@@ -28,6 +29,7 @@ import {
   qrImageUrl,
 } from '../appLinks';
 import { NightSky } from './NightSky';
+import { PinPad, PinResult } from './PinPad';
 import { Promoter, PromoterAvatar } from './PromoterAvatar';
 
 const brandLogoSrc = `${import.meta.env.BASE_URL}logo.png`;
@@ -36,9 +38,35 @@ type PromoterProfile = Promoter & {
   codes: { code: string; url: string; expires_at: string | null }[];
   codes_total: number;
   codes_used: number;
+  codes_available: number;
+  /** With a PIN set the codes come only from POST /promoters/{username}/unlock. */
+  locked: boolean;
+  pin_length: number | null;
 };
 
 type LoadState = { status: 'loading' } | { status: 'missing' } | { status: 'error' } | { status: 'ready'; promoter: PromoterProfile };
+
+const pinStorageKey = (username: string) => `snovi-promoter-pin:${username}`;
+
+const readStoredPin = (username: string) => {
+  try {
+    return window.sessionStorage.getItem(pinStorageKey(username));
+  } catch {
+    return null;
+  }
+};
+
+const storePin = (username: string, pin: string | null) => {
+  try {
+    if (pin) {
+      window.sessionStorage.setItem(pinStorageKey(username), pin);
+    } else {
+      window.sessionStorage.removeItem(pinStorageKey(username));
+    }
+  } catch {
+    // Private mode: the PIN is asked again after a reload.
+  }
+};
 
 const formatCode = (code: string) => code.match(/.{1,4}/g)?.join(' ') ?? code;
 
@@ -144,6 +172,43 @@ export function PromoterPage({ pathname, onHome, onSubscribe }: { pathname: stri
   const [linkCopied, setLinkCopied] = useState(false);
   const platform = detectMobilePlatform();
 
+  const requestUnlock = useCallback(
+    async (pin: string): Promise<{ result: PinResult; promoter?: PromoterProfile }> => {
+      try {
+        const response = await fetch(`${API_BASE}/promoters/${encodeURIComponent(username ?? '')}/unlock`, {
+          method: 'POST',
+          headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
+          body: JSON.stringify({ pin }),
+        });
+
+        if (response.ok) {
+          const { data } = (await response.json()) as { data: PromoterProfile };
+          return { result: 'ok', promoter: data };
+        }
+
+        return { result: response.status === 403 || response.status === 422 ? 'wrong' : response.status === 429 ? 'throttled' : 'error' };
+      } catch {
+        return { result: 'error' };
+      }
+    },
+    [username],
+  );
+
+  const submitPin = useCallback(
+    async (pin: string): Promise<PinResult> => {
+      const { result, promoter } = await requestUnlock(pin);
+
+      if (promoter) {
+        storePin(username ?? '', pin);
+        // Let the dots turn green before the page opens.
+        window.setTimeout(() => setState({ status: 'ready', promoter }), 550);
+      }
+
+      return result;
+    },
+    [requestUnlock, username],
+  );
+
   useEffect(() => {
     if (!username) {
       return;
@@ -157,10 +222,22 @@ export function PromoterPage({ pathname, onHome, onSubscribe }: { pathname: stri
         }
 
         const { data } = (await response.json()) as { data: PromoterProfile };
+        const storedPin = data.locked ? readStoredPin(username) : null;
+
+        // Already unlocked in this tab: open straight away instead of asking again.
+        if (storedPin) {
+          const { promoter } = await requestUnlock(storedPin);
+          if (promoter) {
+            setState({ status: 'ready', promoter });
+            return;
+          }
+          storePin(username, null);
+        }
+
         setState({ status: 'ready', promoter: data });
       })
       .catch(() => setState({ status: 'error' }));
-  }, [username]);
+  }, [requestUnlock, username]);
 
   const share = async (promoter: PromoterProfile) => {
     const shareData = { title: `${promoter.name} poklanja snovi.fm premium`, url: promoter.url };
@@ -225,9 +302,41 @@ export function PromoterPage({ pathname, onHome, onSubscribe }: { pathname: stri
           </div>
         ) : null}
 
-        {state.status === 'ready' ? (() => {
+        {state.status === 'ready' && state.promoter.locked ? (
+          <motion.section
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            className="flex flex-1 flex-col items-center justify-center pb-6 pt-2 text-center"
+          >
+            <div className="relative">
+              <motion.span
+                className="absolute -inset-1.5 rounded-full bg-[conic-gradient(from_0deg,#8b5cf6,#fde68a,#6366f1,#ec4899,#8b5cf6)] opacity-80 blur-[2px]"
+                animate={{ rotate: 360 }}
+                transition={{ duration: 12, repeat: Infinity, ease: 'linear' }}
+              />
+              <span className="absolute -inset-0.5 rounded-full bg-[#050505]" />
+              <PromoterAvatar promoter={state.promoter} className="relative h-20 w-20 text-2xl" />
+              <span className="absolute -bottom-1 -right-1 flex h-8 w-8 items-center justify-center rounded-full border-4 border-[#050505] bg-amber-200 text-indigo-950">
+                <Lock className="h-3.5 w-3.5" />
+              </span>
+            </div>
+            <p className="mt-5 text-[11px] font-black uppercase tracking-[0.3em] text-violet-300">Stranica od</p>
+            <h1 className="mt-2 font-serif text-3xl font-bold sm:text-4xl">{state.promoter.name}</h1>
+            <p className="mt-3 max-w-xs text-sm leading-6 text-slate-400">
+              {state.promoter.codes_available > 0
+                ? `${state.promoter.codes_available} ${state.promoter.codes_available === 1 ? 'poklon čeka' : 'poklona čeka'} iza ovog PIN-a.`
+                : 'Unesite PIN koji ste dobili.'}
+            </p>
+            <div className="mt-8">
+              <PinPad length={state.promoter.pin_length ?? 4} onSubmit={submitPin} />
+            </div>
+          </motion.section>
+        ) : null}
+
+        {state.status === 'ready' && !state.promoter.locked ? (() => {
           const { promoter } = state;
-          const available = promoter.codes.length;
+          const available = promoter.codes_available;
 
           return (
             <>

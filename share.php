@@ -107,7 +107,7 @@ if ($route === 'promo-code') {
     $promoter = $username !== '' ? $fetchApi('promoters/'.rawurlencode($username)) : null;
 
     if ($promoter) {
-        $available = count($promoter['codes'] ?? []);
+        $available = (int) ($promoter['codes_available'] ?? count($promoter['codes'] ?? []));
         $meta['title'] = $promoter['name'].' poklanja snovi.fm premium';
         $meta['description'] = trim(($promoter['headline'] ? rtrim($promoter['headline'], '.').'. ' : '')
             .($available > 0
