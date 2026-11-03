@@ -2,6 +2,8 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { motion } from 'motion/react';
 import { Apple, CheckCircle2, Download, Gift, LoaderCircle, Moon, PlayCircle, ShieldAlert, Sparkles } from 'lucide-react';
 import { API_BASE, APP_STORE_URL, GOOGLE_PLAY_URL, detectMobilePlatform } from '../appLinks';
+import { NightSky } from './NightSky';
+import { Promoter, PromoterAvatar } from './PromoterAvatar';
 import { VoucherTicket } from './VoucherTicket';
 
 const brandLogoSrc = `${import.meta.env.BASE_URL}logo.png`;
@@ -30,30 +32,24 @@ export function promoCodeFromPath(pathname: string): string | null {
 export function PromoCodePage({ pathname, onHome }: { pathname: string; onHome: () => void }) {
   const code = useMemo(() => promoCodeFromPath(pathname), [pathname]);
   const [status, setStatus] = useState<CodeStatus>(code ? 'checking' : 'missing');
+  const [promoter, setPromoter] = useState<Promoter | null>(null);
   const platform = detectMobilePlatform();
-  const stars = useMemo(
-    () => Array.from({ length: 36 }, (_, i) => ({ left: (i * 37) % 100, top: (i * 53) % 100, delay: (i % 7) * 0.6, size: i % 5 === 0 ? 3 : 2 })),
-    [],
-  );
 
   useEffect(() => {
     if (!code) {
       return;
     }
 
-    fetch(`${API_BASE}/gift-codes/check`, {
-      method: 'POST',
-      headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
-      body: JSON.stringify({ code }),
-    })
-      .then((response) => {
-        setStatus(
-          response.ok ? 'valid'
-            : response.status === 409 ? 'used'
-              : response.status === 410 ? 'expired'
-                : response.status === 404 ? 'missing'
-                  : 'unknown',
-        );
+    fetch(`${API_BASE}/gift-codes/${code}/preview`, { headers: { Accept: 'application/json' } })
+      .then(async (response) => {
+        if (!response.ok) {
+          setStatus(response.status === 404 ? 'missing' : 'unknown');
+          return;
+        }
+
+        const { data } = (await response.json()) as { data: { state: 'valid' | 'used' | 'expired'; promoter: Promoter | null } };
+        setStatus(data.state);
+        setPromoter(data.promoter);
       })
       .catch(() => setStatus('unknown'));
   }, [code]);
@@ -65,26 +61,7 @@ export function PromoCodePage({ pathname, onHome }: { pathname: string; onHome: 
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-[#050505] font-sans text-white selection:bg-violet-500/30">
-      {/* Night sky */}
-      <div className="pointer-events-none absolute inset-0">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(124,58,237,0.28),transparent_60%)]" />
-        {stars.map((star, i) => (
-          <motion.span
-            key={i}
-            className="absolute rounded-full bg-white"
-            style={{ left: `${star.left}%`, top: `${star.top}%`, width: star.size, height: star.size }}
-            animate={{ opacity: [0.15, 0.9, 0.15] }}
-            transition={{ duration: 3.5, repeat: Infinity, delay: star.delay }}
-          />
-        ))}
-        {/* Crescent: a transparent circle that only casts its glowing shadow. */}
-        <motion.div
-          className="absolute right-6 top-28 h-28 w-28 rounded-full sm:right-[10%] sm:top-24 sm:h-40 sm:w-40"
-          style={{ boxShadow: '24px 14px 0 0 #fde68a', filter: 'drop-shadow(0 0 22px rgba(253,230,138,0.45))' }}
-          animate={{ y: [0, -12, 0], rotate: [0, 4, 0] }}
-          transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut' }}
-        />
-      </div>
+      <NightSky />
 
       <div className="relative mx-auto flex min-h-screen max-w-2xl flex-col px-4 pb-16 sm:px-6">
         <header className="flex h-20 items-center justify-between">
@@ -103,6 +80,18 @@ export function PromoCodePage({ pathname, onHome }: { pathname: string; onHome: 
           <h1 className="mt-5 font-serif text-5xl font-bold leading-[0.95] tracking-tight sm:text-6xl">
             Vaš poklon za mirne večeri
           </h1>
+          {promoter ? (
+            <a
+              href={`/promoters/${promoter.username}`}
+              className="mx-auto mt-6 inline-flex items-center gap-3 rounded-full border border-white/10 bg-white/[0.05] py-1.5 pl-1.5 pr-5 text-left transition hover:border-violet-400/50"
+            >
+              <PromoterAvatar promoter={promoter} className="h-10 w-10 text-sm" />
+              <span>
+                <span className="block text-[10px] font-black uppercase tracking-[0.2em] text-violet-300">Poklon od</span>
+                <span className="block text-sm font-bold">{promoter.name}</span>
+              </span>
+            </a>
+          ) : null}
           <p className="mx-auto mt-5 max-w-md text-lg leading-8 text-slate-300">
             Preuzmite aplikaciju snovi.fm i aktivirajte kod. Priče, uspavanke i ambijenti otključavaju se odmah.
           </p>

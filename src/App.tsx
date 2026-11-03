@@ -48,6 +48,9 @@ const SubscriptionPage = React.lazy(() =>
 const PromoCodePage = React.lazy(() =>
   import('./components/PromoCodePage').then((module) => ({ default: module.PromoCodePage })),
 );
+const PromoterPage = React.lazy(() =>
+  import('./components/PromoterPage').then((module) => ({ default: module.PromoterPage })),
+);
 const KindergartenOfferPage = React.lazy(() =>
   import('./components/KindergartenOfferPage').then((module) => ({ default: module.KindergartenOfferPage })),
 );
@@ -92,6 +95,8 @@ const SUBSCRIBE_PAGE_PATH = '/pretplata';
 const KINDERGARTEN_OFFER_PATH = '/ponuda-obdanista';
 // Voucher links from emails and QR codes; with the app installed they open in the app instead.
 const PROMO_CODE_PATH = '/promo-code';
+// Influencer pages with the gift codes they hand out (promoters in the CMS).
+const PROMOTER_PATH = '/promoters';
 // Smart share link used by the app's native share sheet (see predah SHARE_URL).
 // iOS/Android visitors go straight to their store; desktop visitors land on the
 // home page with the store-choice modal open.
@@ -100,7 +105,7 @@ const APP_STORE_URL = 'https://apps.apple.com/app/snovi-fm/id6758638251';
 const GOOGLE_PLAY_URL = 'https://play.google.com/store/apps/details?id=snovi.qla.dev';
 type StorePlatform = 'ios' | 'android';
 
-type Page = 'app' | 'methodology' | 'ambients' | 'library' | 'privacy' | 'terms' | 'cookies' | 'subscribe' | 'kindergartenOffer' | 'promoCode';
+type Page = 'app' | 'methodology' | 'ambients' | 'library' | 'privacy' | 'terms' | 'cookies' | 'subscribe' | 'kindergartenOffer' | 'promoCode' | 'promoter';
 type LegalPageId = 'privacy' | 'terms' | 'cookies';
 
 type PageMeta = {
@@ -176,7 +181,17 @@ const PAGE_META: Record<Page, PageMeta> = {
     path: PROMO_CODE_PATH,
     imagePath: '/img/snovi1.jpg',
   },
+  promoter: {
+    title: 'snovi.fm - Preporuka',
+    description: 'Besplatni snovi.fm premium kodovi: priče, uspavanke i ambijenti za mirniji san djece.',
+    keywords: 'snovi.fm promo kod, poklon, premium',
+    path: PROMOTER_PATH,
+    imagePath: '/img/snovi1.jpg',
+  },
 };
+
+// Their link previews come from share.php, filled in with the code or the promoter.
+const SERVER_META_PAGES = new Set<Page>(['promoCode', 'promoter']);
 
 const SECTION_PAGE_IDS: Partial<Record<Page, string>> = {
   methodology: 'psychology',
@@ -230,6 +245,10 @@ function getPageFromPath(pathname = window.location.pathname): Page {
     return 'promoCode';
   }
 
+  if (path.startsWith(`${PROMOTER_PATH}/`)) {
+    return 'promoter';
+  }
+
   return 'app';
 }
 
@@ -246,7 +265,7 @@ function getPathForPage(page: Page) {
     return KINDERGARTEN_OFFER_PATH;
   }
 
-  if (page === 'promoCode') {
+  if (page === 'promoCode' || page === 'promoter') {
     return normalizePath(window.location.pathname);
   }
 
@@ -733,6 +752,10 @@ export default function App() {
   }, [page, scrollToSectionPage]);
 
   useEffect(() => {
+    if (SERVER_META_PAGES.has(page)) {
+      return;
+    }
+
     const meta = PAGE_META[page];
     const canonicalUrl = `${SITE_ORIGIN}${meta.path}`;
     const imageUrl = `${SITE_ORIGIN}${meta.imagePath ?? OG_IMAGE_PATH}`;
@@ -742,7 +765,7 @@ export default function App() {
     upsertMeta('meta[name="title"]', { name: 'title', content: meta.title });
     upsertMeta('meta[name="description"]', { name: 'description', content: meta.description });
     upsertMeta('meta[name="keywords"]', { name: 'keywords', content: meta.keywords });
-    upsertMeta('meta[name="robots"]', { name: 'robots', content: page === 'promoCode' ? 'noindex,nofollow' : 'index,follow,max-snippet:160,max-image-preview:large' });
+    upsertMeta('meta[name="robots"]', { name: 'robots', content: 'index,follow,max-snippet:160,max-image-preview:large' });
     upsertMeta('meta[name="theme-color"]', { name: 'theme-color', content: '#050505' });
     upsertLink('link[rel="canonical"]', { rel: 'canonical', href: canonicalUrl });
     upsertMeta('meta[property="og:type"]', { property: 'og:type', content: 'website' });
@@ -941,6 +964,14 @@ export default function App() {
     return (
       <Suspense fallback={<div className="min-h-screen bg-[#050505]" />}>
         <PromoCodePage pathname={window.location.pathname} onHome={() => navigateToPage('app')} />
+      </Suspense>
+    );
+  }
+
+  if (page === 'promoter') {
+    return (
+      <Suspense fallback={<div className="min-h-screen bg-[#050505]" />}>
+        <PromoterPage pathname={window.location.pathname} onHome={() => navigateToPage('app')} onSubscribe={() => navigateToPage('subscribe')} />
       </Suspense>
     );
   }
